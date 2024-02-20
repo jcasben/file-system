@@ -1,7 +1,5 @@
 #include "ficheros_basico.h"
 
-struct superbloque *SB;
-
 /// @brief Calculate the size in blocks needed for the bitmap
 /// @param nbloques Number of blocks
 /// @return The size of the bitmap in blocks
@@ -38,22 +36,22 @@ int tamAI(unsigned int ninodos)
 /// @return FALLO if an error occurs, EXITO otherwise.
 int initSB(unsigned int nbloques, unsigned int ninodos)
 {
-    SB = malloc(sizeof(struct superbloque));
-    SB->posPrimerBloqueMB = posSB + tamSB;
-    SB->posUltimoBloqueMB = SB->posPrimerBloqueMB + tamMB(nbloques) - 1;
-    SB->posPrimerBloqueAI = SB->posUltimoBloqueMB + 1;
-    SB->posUltimoBloqueAI = SB->posPrimerBloqueAI + tamAI(ninodos) - 1;
-    SB->posPrimerBloqueDatos = SB->posUltimoBloqueAI + 1;
-    SB->posUltimoBloqueDatos = nbloques-1;
-    SB->posInodoRaiz = 0;
-    SB->posPrimerInodoLibre = 0;
-    SB->cantBloquesLibres = nbloques;
-    SB->cantInodosLibres = ninodos;
-    SB->totBloques = nbloques;
-    SB->totInodos = ninodos;
+    struct superbloque SB = {
+        posPrimerBloqueMB: posSB + tamSB,
+        posUltimoBloqueMB: SB.posPrimerBloqueMB + tamMB(nbloques) - 1,
+        posPrimerBloqueAI: SB.posUltimoBloqueMB + 1,
+        posUltimoBloqueAI: SB.posPrimerBloqueAI + tamAI(ninodos) - 1,
+        posPrimerBloqueDatos: SB.posUltimoBloqueAI + 1,
+        posInodoRaiz: 0,
+        posPrimerInodoLibre: 0,
+        cantBloquesLibres: nbloques,
+        cantInodosLibres: ninodos,
+        totBloques: nbloques,
+        totInodos: ninodos,
+    };
 
     // Write the superblock structure to the disk at the position posSB
-    if(bwrite(posSB, SB) < 0)
+    if(bwrite(posSB, &SB) < 0)
     {
         perror(RED "ERROR" RESET);
         return FALLO;
@@ -64,21 +62,57 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
 
 /// @brief Initializes de bitmap that represents with 1 the
 /// metadata.
-/// @return 
+/// @return FALLO if an error occurs, EXITO otherwise.
 int initMB()
 {
-    //Leer el superbloque y hacer magia.
+    struct superbloque SB;
+    bread(posSB, &SB);
+    int meta_blocks = tamMB(SB.totBloques) + tamAI(SB.totInodos) + tamSB;
+    
+    int bytes_to_1 = meta_blocks / 8;
+    char bufferMB[1024];
+    for (size_t i = 0; i < bytes_to_1; i++)
+    {
+        bufferMB[i] = 255;
+    }
+    
+    // Setting the necesary bits of the last byte to 1 (meta_blocks % 8)
+    int bits_to_1 = meta_blocks % 8;
+    int last_byte = 0;
+    for (size_t i = 7; i > 7 - bits_to_1; i--)
+    {
+        //last_byte += pow(2, i);
+    }
+    bufferMB[bytes_to_1] = last_byte;
+
+    // Setting the rest of the block to 0, from the byte bytes_to_1 + 1 
+    // to BLOCKSIZE
+    for (size_t i = bytes_to_1 + 1; i < BLOCKSIZE; i++)
+    {
+        bufferMB[i] = 0;
+    }
+    
+    // Write the buffer to the virtual device at the first block
+    // of the bitmap
+    bwrite(SB.posPrimerBloqueMB, bufferMB);
+    // Recalculate the number of free blocks at the super block.
+    SB.cantBloquesLibres = SB.cantBloquesLibres - meta_blocks;
+    bwrite(posSB, &SB);
+
+    return EXITO;
 }
 
 /// @brief Initialize the array of inodes
-/// @return 
+/// @return FALLO if an error occurs, EXITO otherwise.
 int initAI()
 {
-    struct inodo inodos[BLOCKSIZE/INODOSIZE];  
+    struct inodo inodos[BLOCKSIZE/INODOSIZE];
+    struct superbloque SB;
+    bread(posSB, &SB);  
     
-    unsigned int contInodos = SB->posPrimerInodoLibre + 1;
+    unsigned int contInodos = SB.posPrimerInodoLibre + 1;
 
-    for (unsigned int i = SB->posPrimerBloqueAI; i <= SB->posUltimoBloqueAI; i++)
+    for (unsigned int i = SB.posPrimerBloqueAI; i <= SB.posUltimoBloqueAI; i++)
     {
         if(bread(i, inodos) == FALLO)
         {
@@ -89,7 +123,7 @@ int initAI()
         {
             inodos[j].tipo = 'l';
             
-            if(contInodos < SB->totInodos)
+            if(contInodos < SB.totInodos)
             {
                 inodos[j].punterosDirectos[0] = contInodos;
                 contInodos++;
