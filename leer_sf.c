@@ -27,15 +27,22 @@ int main(int argc, char **argv)
     printf("\nsizeof struct superbloque: %ld\n", sizeof(struct superbloque));
     printf("sizeof struct inodo: %ld\n", sizeof(struct inodo));
     printf("\n\n RECORRIDO LISTA ENLAZADA DE INODOS LIBRES\n");
+
+    struct inodo inodos[BLOCKSIZE/INODOSIZE];
     int i = SB.posPrimerBloqueAI;
-    struct inodo inodo_aux;
-    while (i != SB.posUltimoBloqueAI)
+    while (i <= SB.posUltimoBloqueAI)
     {
-        bread(i, &inodo_aux);
-        printf("%d ", inodo_aux.punterosDirectos[0]);
-        i = inodo_aux.punterosDirectos[0];
+        if(bread(i, inodos) == FALLO)
+        {
+            printf(RED "ERROR: Error reading an inode" RESET);
+        }
+        for (size_t j = 0; j < BLOCKSIZE/INODOSIZE; j++)
+        {
+            printf("%d ", inodos[j].punterosDirectos[0]);
+        }
+        printf("\n");
+        i++;
     }
-    printf("\n");
 
     if (bumount() < 0)
     {
