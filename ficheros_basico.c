@@ -256,16 +256,81 @@ int reservar_bloque()
     char bufferAux[BLOCKSIZE];
     memset(bufferAux, 255, BLOCKSIZE);
 
+    // Iterates through nbloqueMB and finds a block that contains at least one 0
     unsigned int nbloqueMB = 0;
-    while (memcmp(bufferMB, bufferAux, BLOCKSIZE) == 0)
-        ;
+    if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == FALLO)
+        return FALLO;
+
+    // Compares the content of bufferMB with the content of the auxiliar buffer
+    while (memcmp(bufferMB, bufferAux, BLOCKSIZE) == 0 
+            && (nbloqueMB + SB.posPrimerBloqueMB <= SB.posUltimoBloqueMB)
+            )
+    {
+        nbloqueMB++;
+
+        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == FALLO)
+            return FALLO;
+    }
+
+
+    unsigned int posbyte = 0;
+    // Locates on bufferMB the position of the first byte that contains any 0
+    while(bufferMB[posbyte] == 255 && posbyte < BLOCKSIZE)
+    {
+        posbyte++;
+    }
+    
+    
+    unsigned char mascara = 128;
+    unsigned int posbit = 0;
+    // Find on the byte the position of the first 0
+    while(bufferMB[posbyte] & mascara)
+    {
+        bufferMB[posbyte] <<= 1;
+        posbit++;
+    }
+
+    // Calculates the number of the physic block that we can reserve
+    unsigned int nbloque = (nbloqueMB * BLOCKSIZE + posbyte) * 8 + posbit;
+
+    // Set to 1 the bit that represents the block that we
+    // want to reserve at the bitmap
+    if (escribir_bit(nbloque, 1) == FALLO)
+        return FALLO;
+    
+    // Decrease the number of free block and save the superblock
+    SB.cantBloquesLibres--;
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
+
+    // Clean the block setting all the bytes to 0
+    char clean[BLOCKSIZE];
+    memset(clean, 0, BLOCKSIZE);
+    if (bwrite(nbloque, clean) == FALLO)
+        return FALLO;
+    
+    return nbloque;
 }
 
-/// @brief
-/// @param
-/// @return
+/// @brief frees the specified block.
+/// @param nbloque number of the block to be freed.
+/// @return the number of the freed block (nbloque); FALLO otherwise.
 int liberar_bloque(unsigned int nbloque)
 {
+    // Set to 0 the bit that represent the block that we
+    // want to free at the bitmap.
+    if (escribir_bit(nbloque, 0) == FALLO)
+        return FALLO;
+
+    // Read the superblock and increase the number of free blocks.
+    struct superbloque SB;
+    if (bread(posSB, &SB) == FALLO)
+        return FALLO;
+    SB.cantBloquesLibres++;
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
+
+    return nbloque;
 }
 
 /// @brief Writes an inodo at the specified inode of the array.
@@ -367,8 +432,10 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     if (escribir_inodo(posInodoReservado, &new_inode) == FALLO)
         return FALLO;
 
-    // Update the cantInodosLibres at the superblock
+    // Update the cantInodosLibres at the superblock and rewrite it.
     SB.cantInodosLibres = SB.cantInodosLibres - 1;
+    if (bwrite(posSB, &SB) == FALLO)
+        return FALLO;
 
     return posInodoReservado;
 }
