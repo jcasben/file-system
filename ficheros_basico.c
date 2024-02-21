@@ -42,6 +42,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
         posPrimerBloqueAI: SB.posUltimoBloqueMB + 1,
         posUltimoBloqueAI: SB.posPrimerBloqueAI + tamAI(ninodos) - 1,
         posPrimerBloqueDatos: SB.posUltimoBloqueAI + 1,
+        posUltimoBloqueDatos: nbloques -1,
         posInodoRaiz: 0,
         posPrimerInodoLibre: 0,
         cantBloquesLibres: nbloques,
@@ -58,6 +59,21 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
     }
 
     return EXITO;
+}
+
+/// @brief this function makes the pow of a number.
+/// @param base the base of the pow.
+/// @param exponent the exponent of the pow.
+/// @return the base powered to the exponent.
+int power(int base, int exponent)
+{
+    int result = 1;
+    for (size_t i = 0; i < exponent; i++)
+    {
+        result = result * base;
+    }
+    
+    return result;
 }
 
 /// @brief Initializes de bitmap that represents with 1 the
@@ -81,7 +97,7 @@ int initMB()
     int last_byte = 0;
     for (size_t i = 7; i > 7 - bits_to_1; i--)
     {
-        //last_byte += pow(2, i);
+        last_byte += power(2, i);
     }
     bufferMB[bytes_to_1] = last_byte;
 
@@ -108,7 +124,7 @@ int initAI()
 {
     struct inodo inodos[BLOCKSIZE/INODOSIZE];
     struct superbloque SB;
-    bread(posSB, &SB);  
+    bread(posSB, &SB);
     
     unsigned int contInodos = SB.posPrimerInodoLibre + 1;
 
@@ -135,7 +151,7 @@ int initAI()
             }
         }
         
-        if(bwrite(i, inodos) == FALLO)
+        if(bwrite(i, inodos) < 0)
         {
             return FALLO;
         }
