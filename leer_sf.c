@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     printf("\nsizeof struct superbloque: %ld\n", sizeof(struct superbloque));
     printf("sizeof struct inodo: %ld\n", sizeof(struct inodo));
     printf("\n\n RECORRIDO LISTA ENLAZADA DE INODOS LIBRES\n");
-
+    
     struct inodo inodos[BLOCKSIZE/INODOSIZE];
     int i = SB.posPrimerBloqueAI;
     while (i <= SB.posUltimoBloqueAI)
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
         printf("\n");
         i++;
     }
-
+    
     if (bumount() < 0)
     {
         return FALLO;
