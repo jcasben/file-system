@@ -24,7 +24,7 @@ int main(int argc, char **argv)
         fprintf(stderr, RED "The number of blocks must be greater than 0.\n" RESET);
         return FALLO;
     }
-
+    
     // Set the elements of the buffer to 0
     unsigned char buffer[BLOCKSIZE];
     if(memset(buffer, 0, BLOCKSIZE) < 0)
@@ -38,7 +38,10 @@ int main(int argc, char **argv)
     {
         bwrite(i, buffer);
     }
-    
+
+    initSB(nblocks, nblocks/4);
+    initMB();
+    initAI();
 
     // Unmounting the device
     if(bumount() < 0)
