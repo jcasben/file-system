@@ -77,7 +77,7 @@ int bread(unsigned int nbloque, void *buf)
         return FALLO;
     }
     // We read the block
-    if (read(fd, buf, BLOCKSIZE) != BLOCKSIZE)
+    if (read(fd, buf, BLOCKSIZE) == FALLO)
     {
         perror(RED "ERROR" RESET);
         return FALLO;
