@@ -1,6 +1,6 @@
 #include "ficheros_basico.h"
 
-//----------------------------- NIVEL 2 (- 21/02/2023) -----------------------------
+//----------------------------- NIVEL 2 (15/02/2023 - 21/02/2023) -----------------------------
 
 /// @brief Calculate the size in blocks needed for the bitmap
 /// @param nbloques Number of blocks
@@ -364,8 +364,6 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
         mtime : time(NULL),
         ctime : time(NULL),
         numBloquesOcupados : 0,
-        punterosDirectos : 0,
-        punterosIndirectos : 0,
     };
 
     // Write the new inode to the disk
