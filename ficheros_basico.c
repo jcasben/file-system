@@ -78,7 +78,7 @@ int initMB()
     int meta_blocks = tamMB(SB.totBloques) + tamAI(SB.totInodos) + tamSB;
 
     int bytes_to_1 = meta_blocks / 8;
-    char bufferMB[1024];
+    char bufferMB[BLOCKSIZE];
     for (size_t i = 0; i < bytes_to_1; i++) bufferMB[i] = 255;
 
     // Setting the necesary bits of the last byte to 1 (meta_blocks % 8)
