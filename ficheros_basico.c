@@ -1,6 +1,6 @@
 #include "ficheros_basico.h"
 
-//----------------------------- NIVEL 2 -----------------------------
+//----------------------------- NIVEL 2 (- 21/02/2023) -----------------------------
 
 /// @brief Calculate the size in blocks needed for the bitmap
 /// @param nbloques Number of blocks
@@ -8,10 +8,7 @@
 int tamMB(unsigned int nbloques)
 {
     unsigned int size = ((nbloques / 8) / BLOCKSIZE);
-    if (((nbloques / 8) % BLOCKSIZE) != 0)
-    {
-        size++;
-    }
+    if (((nbloques / 8) % BLOCKSIZE) != 0) size++;
 
     return size;
 }
@@ -22,12 +19,8 @@ int tamMB(unsigned int nbloques)
 int tamAI(unsigned int ninodos)
 {
     unsigned int size = (ninodos * INODOSIZE) / BLOCKSIZE;
-
-    if ((ninodos * INODOSIZE) % BLOCKSIZE != 0)
-    {
-        size++;
-    }
-
+    if ((ninodos * INODOSIZE) % BLOCKSIZE != 0) size++;
+    
     return size;
 }
 
@@ -70,10 +63,7 @@ int initSB(unsigned int nbloques, unsigned int ninodos)
 int power(int base, int exponent)
 {
     int result = 1;
-    for (size_t i = 0; i < exponent; i++)
-    {
-        result = result * base;
-    }
+    for (size_t i = 0; i < exponent; i++) result = result * base;
 
     return result;
 }
@@ -84,38 +74,29 @@ int power(int base, int exponent)
 int initMB()
 {
     struct superbloque SB;
-    bread(posSB, &SB);
+    if (bread(posSB, &SB) == FALLO) return FALLO;
     int meta_blocks = tamMB(SB.totBloques) + tamAI(SB.totInodos) + tamSB;
 
     int bytes_to_1 = meta_blocks / 8;
     char bufferMB[1024];
-    for (size_t i = 0; i < bytes_to_1; i++)
-    {
-        bufferMB[i] = 255;
-    }
+    for (size_t i = 0; i < bytes_to_1; i++) bufferMB[i] = 255;
 
     // Setting the necesary bits of the last byte to 1 (meta_blocks % 8)
     int bits_to_1 = meta_blocks % 8;
     int last_byte = 0;
-    for (size_t i = 7; i > 7 - bits_to_1; i--)
-    {
-        last_byte += power(2, i);
-    }
+    for (size_t i = 7; i > 7 - bits_to_1; i--) last_byte += power(2, i);
     bufferMB[bytes_to_1] = last_byte;
 
     // Setting the rest of the block to 0, from the byte bytes_to_1 + 1
     // to BLOCKSIZE
-    for (size_t i = bytes_to_1 + 1; i < BLOCKSIZE; i++)
-    {
-        bufferMB[i] = 0;
-    }
+    for (size_t i = bytes_to_1 + 1; i < BLOCKSIZE; i++) bufferMB[i] = 0;
 
     // Write the buffer to the virtual device at the first block
     // of the bitmap
-    bwrite(SB.posPrimerBloqueMB, bufferMB);
+    if (bwrite(SB.posPrimerBloqueMB, bufferMB) == FALLO) return FALLO;
     // Recalculate the number of free blocks at the super block.
     SB.cantBloquesLibres = SB.cantBloquesLibres - meta_blocks;
-    bwrite(posSB, &SB);
+    if (bwrite(posSB, &SB) == FALLO) return FALLO;
 
     return EXITO;
 }
@@ -126,17 +107,12 @@ int initAI()
 {
     struct inodo inodos[BLOCKSIZE / INODOSIZE];
     struct superbloque SB;
-    bread(posSB, &SB);
+    if (bread(posSB, &SB) == FALLO) return FALLO;
 
     unsigned int contInodos = SB.posPrimerInodoLibre + 1;
-
     for (unsigned int i = SB.posPrimerBloqueAI; i <= SB.posUltimoBloqueAI; i++)
     {
-        if (bread(i, inodos) == FALLO)
-        {
-            return FALLO;
-        }
-
+        if (bread(i, inodos) == FALLO) return FALLO;
         for (size_t j = 0; j < BLOCKSIZE / INODOSIZE; j++)
         {
             inodos[j].tipo = 'l';
@@ -152,17 +128,13 @@ int initAI()
                 break;
             }
         }
-
-        if (bwrite(i, inodos) < 0)
-        {
-            return FALLO;
-        }
+        if (bwrite(i, inodos) < 0) return FALLO;
     }
 
     return EXITO;
 }
 
-//----------------------------- NIVEL 3 -----------------------------
+//----------------------------- NIVEL 3 (21/02/2023 - )-----------------------------
 
 /// @brief Modify the value of a bit in the bitmap(MB).
 /// @param nbloque The block number where the bit we want to modify is located.
@@ -172,9 +144,7 @@ int escribir_bit(unsigned int nbloque, unsigned int bit)
 {
     // Read the superblock
     struct superbloque SB;
-    if (bread(posSB, &SB) == FALLO)
-        return FALLO;
-
+    if (bread(posSB, &SB) == FALLO) return FALLO;
     int posbyte = nbloque / 8;
     int posbit = nbloque % 8;
     int nbloqueMB = posbyte / BLOCKSIZE;
@@ -182,22 +152,18 @@ int escribir_bit(unsigned int nbloque, unsigned int bit)
     unsigned char bufferMB[BLOCKSIZE];
 
     // Read the block where the bit is located
-    if (bread(nbloqueabs, bufferMB) == FALLO)
-        return FALLO;
+    if (bread(nbloqueabs, bufferMB) == FALLO) return FALLO;
 
     // Modify the bit in the byte(buferMB)
     posbyte = posbyte % BLOCKSIZE;
     unsigned char mascara = 128;
     mascara >>= posbit;
 
-    if (bit == 1)
-        bufferMB[posbyte] |= mascara;
-    else
-        bufferMB[posbyte] &= ~mascara;
+    if (bit == 1) bufferMB[posbyte] |= mascara;
+    else bufferMB[posbyte] &= ~mascara;
 
     // Write the block with the bit modified
-    if (bwrite(nbloqueabs, bufferMB) == FALLO)
-        return FALLO;
+    if (bwrite(nbloqueabs, bufferMB) == FALLO) return FALLO;
 
     return EXITO;
 }
@@ -209,8 +175,7 @@ char leer_bit(unsigned int nbloque)
 {
     // Read the superblock
     struct superbloque SB;
-    if (bread(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bread(posSB, &SB) == FALLO) return FALLO;
 
     int posbyte = nbloque / 8;
     int posbit = nbloque % 8;
@@ -219,8 +184,7 @@ char leer_bit(unsigned int nbloque)
     unsigned char bufferMB[BLOCKSIZE];
 
     // Read the block where the bit is located
-    if (bread(nbloqueabs, bufferMB) == FALLO)
-        return FALLO;
+    if (bread(nbloqueabs, bufferMB) == FALLO) return FALLO;
 
     // Read the bit in the byte(buferMB)
     posbyte = posbyte % BLOCKSIZE;
@@ -238,16 +202,11 @@ char leer_bit(unsigned int nbloque)
 int reservar_bloque()
 {
     struct superbloque SB;
-    if (bread(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bread(posSB, &SB) == FALLO) return FALLO;
 
     // Check the amount of free blocks
     // If the amount is zero or fewer, there is no free block
-    if (SB.cantBloquesLibres <= 0)
-    {
-        // TODO: Pregunta qué devuelvo si no quedan bloques libres.
-        return FALLO;
-    }
+    if (SB.cantBloquesLibres <= 0) return FALLO;
 
     // Create the buffer to read from MB
     char bufferMB[BLOCKSIZE];
@@ -258,28 +217,21 @@ int reservar_bloque()
 
     // Iterates through nbloqueMB and finds a block that contains at least one 0
     unsigned int nbloqueMB = 0;
-    if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == FALLO)
-        return FALLO;
+    if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == FALLO) return FALLO;
 
     // Compares the content of bufferMB with the content of the auxiliar buffer
-    while (memcmp(bufferMB, bufferAux, BLOCKSIZE) == 0 
+    while (
+            memcmp(bufferMB, bufferAux, BLOCKSIZE) == 0 
             && (nbloqueMB + SB.posPrimerBloqueMB <= SB.posUltimoBloqueMB)
-            )
+        )
     {
         nbloqueMB++;
-
-        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == FALLO)
-            return FALLO;
+        if (bread(nbloqueMB + SB.posPrimerBloqueMB, bufferMB) == FALLO) return FALLO;
     }
-
 
     unsigned int posbyte = 0;
     // Locates on bufferMB the position of the first byte that contains any 0
-    while(bufferMB[posbyte] == 255 && posbyte < BLOCKSIZE)
-    {
-        posbyte++;
-    }
-    
+    while(bufferMB[posbyte] == 255 && posbyte < BLOCKSIZE) posbyte++;
     
     unsigned char mascara = 128;
     unsigned int posbit = 0;
@@ -295,19 +247,16 @@ int reservar_bloque()
 
     // Set to 1 the bit that represents the block that we
     // want to reserve at the bitmap
-    if (escribir_bit(nbloque, 1) == FALLO)
-        return FALLO;
+    if (escribir_bit(nbloque, 1) == FALLO) return FALLO;
     
     // Decrease the number of free block and save the superblock
     SB.cantBloquesLibres--;
-    if (bwrite(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bwrite(posSB, &SB) == FALLO) return FALLO;
 
     // Clean the block setting all the bytes to 0
     char clean[BLOCKSIZE];
     memset(clean, 0, BLOCKSIZE);
-    if (bwrite(nbloque, clean) == FALLO)
-        return FALLO;
+    if (bwrite(nbloque, clean) == FALLO) return FALLO;
     
     return nbloque;
 }
@@ -319,16 +268,13 @@ int liberar_bloque(unsigned int nbloque)
 {
     // Set to 0 the bit that represent the block that we
     // want to free at the bitmap.
-    if (escribir_bit(nbloque, 0) == FALLO)
-        return FALLO;
+    if (escribir_bit(nbloque, 0) == FALLO) return FALLO;
 
     // Read the superblock and increase the number of free blocks.
     struct superbloque SB;
-    if (bread(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bread(posSB, &SB) == FALLO) return FALLO;
     SB.cantBloquesLibres++;
-    if (bwrite(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bwrite(posSB, &SB) == FALLO) return FALLO;
 
     return nbloque;
 }
@@ -341,8 +287,7 @@ int liberar_bloque(unsigned int nbloque)
 int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
 {
     struct superbloque SB;
-    if (bread(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bread(posSB, &SB) == FALLO) return FALLO;
 
     // Calculate the block where belongs the position of the inode
     // that we want to write.
@@ -352,13 +297,11 @@ int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
     // Use the absolute block number that we calculated to read that
     // block
     struct inodo inodos[BLOCKSIZE / INODOSIZE];
-    if (bread(absolute_block, inodos) == FALLO)
-        return FALLO;
+    if (bread(absolute_block, inodos) == FALLO) return FALLO;
 
     // Write the new inode at the relative position on the block.
     inodos[ninodo % (BLOCKSIZE / INODOSIZE)] = *inodo;
-    if (bwrite(absolute_block, inodos) == FALLO)
-        return FALLO;
+    if (bwrite(absolute_block, inodos) == FALLO) return FALLO;
 
     return EXITO;
 }
@@ -371,8 +314,7 @@ int escribir_inodo(unsigned int ninodo, struct inodo *inodo)
 int leer_inodo(unsigned int ninodo, struct inodo *inodo)
 {
     struct superbloque SB;
-    if (bread(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bread(posSB, &SB) == FALLO) return FALLO;
 
     // Calculate the block where belongs the position of the inode
     // that we want to read.
@@ -382,8 +324,7 @@ int leer_inodo(unsigned int ninodo, struct inodo *inodo)
     // Use the absolute block number that we calculated to read that
     // block
     struct inodo inodos[BLOCKSIZE / INODOSIZE];
-    if (bread(absolute_block, inodos) == FALLO)
-        return FALLO;
+    if (bread(absolute_block, inodos) == FALLO) return FALLO;
 
     // Dump the specified inode into the variable
     *inodo = inodos[ninodo % (BLOCKSIZE / INODOSIZE)];
@@ -400,8 +341,7 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
 {
     // Read the superblock
     struct superbloque SB;
-    if (bread(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bread(posSB, &SB) == FALLO) return FALLO;
 
     // Check if there are free inodes
     if (SB.cantInodosLibres == 0)
@@ -429,13 +369,11 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     };
 
     // Write the new inode to the disk
-    if (escribir_inodo(posInodoReservado, &new_inode) == FALLO)
-        return FALLO;
+    if (escribir_inodo(posInodoReservado, &new_inode) == FALLO) return FALLO;
 
     // Update the cantInodosLibres at the superblock and rewrite it.
     SB.cantInodosLibres = SB.cantInodosLibres - 1;
-    if (bwrite(posSB, &SB) == FALLO)
-        return FALLO;
+    if (bwrite(posSB, &SB) == FALLO) return FALLO;
 
     return posInodoReservado;
 }
