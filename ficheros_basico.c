@@ -149,7 +149,7 @@ int initAI()
     return EXITO;
 }
 
-//----------------------------- NIVEL 3 (21/02/2023 - 25/02/2024)-----------------------------
+//----------------------------- NIVEL 3 (21/02/2023 - 25/02/2024) -----------------------------
 
 /// @brief Modify the value of a bit in the bitmap(MB).
 /// @param nbloque The block number where the bit we want to modify is located.
@@ -389,4 +389,137 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     if (bwrite(posSB, &SB) == FALLO) return FALLO;
 
     return posInodoReservado;
+}
+
+//----------------------------- NIVEL 4 (25/02/2023 - ) -----------------------------
+
+/// @brief Optain the range of pointers where the logical block we
+//         are searching is located. We also obtain the adress 
+//         stored in the corresponding inode pointer.
+/// @param inodo inode where we are going to search the logical block.
+/// @param nblogico number of the logical block.
+/// @param ptr adress stored in the corresponding inode pointer.
+/// @return the range of pointers where the logical block
+int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *ptr)
+{
+    if (nblogico < DIRECTOS)
+    {
+        *ptr = inodo->punterosDirectos[nblogico];
+        return 0;
+    }
+    else if (nblogico < INDIRECTOS0)
+    {
+        *ptr = inodo->punterosIndirectos[0];
+        return 1;
+    }
+    else if (nblogico < INDIRECTOS1)
+    {
+        *ptr = inodo->punterosIndirectos[1];
+        return 2;
+    }
+    else if (nblogico < INDIRECTOS2)
+    {
+        *ptr = inodo->punterosIndirectos[2];
+        return 3;
+    }
+    else
+    {
+        *ptr = 0;
+        printf(RED "Bloque lógico fuera de rango" RESET);
+        return FALLO;
+    }
+}
+
+/// @brief Obtains the index of the given logic block with the level
+/// @param nblogico position of the logical block
+/// @param nivel_punteros level of the indirect pointer
+/// @return position of the physical block
+int obtener_indice(unsigned int nblogico, int nivel_punteros)
+{
+    if(nblogico < DIRECTOS) return nblogico;  
+    else if (nblogico < INDIRECTOS0) return nblogico - DIRECTOS;
+    else if (nblogico < INDIRECTOS1)
+    {
+        if(nivel_punteros == 2) return (nblogico - INDIRECTOS0) / NPUNTEROS;
+        else if(nivel_punteros == 1) return (nblogico - INDIRECTOS0) % NPUNTEROS;
+    }
+    else if (nblogico < INDIRECTOS2)
+    {
+        if(nivel_punteros == 3) return (nblogico - INDIRECTOS0) / NPUNTEROS;
+        else if(nivel_punteros == 2) return (nblogico - INDIRECTOS0) % NPUNTEROS;
+        else if(nivel_punteros == 1) return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) % NPUNTEROS;
+    }
+    
+    return FALLO;
+}
+
+/// @brief Obtains the number of the physical block corresponding
+/// to a specified logical block of the indicated inode.
+/// @param inodo indicated inode.
+/// @param nblogico number of the logical block.
+/// @param reservar behavior of the function.
+/// @return if reservar = 0 -> the function is used only to consult if the physical block exists.
+/// If exists returns its position, if not returns FALLO;
+/// if 1 -> the function is used to consult if the physical block exists and to
+/// reserve a physical block. If the physical block exists, it returns its position.
+/// If it doesn't exist, it reserves memory for it and returns its position.
+int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned char reservar)
+{
+    unsigned int ptr = 0;
+    unsigned int ptr_ant = 0;
+    int nRangoBL = obtener_nRangoBL(inodo, nblogico, &ptr);
+    int nivel_punteros = nRangoBL;
+    int indice;
+    unsigned int buffer[NPUNTEROS];
+
+    while (nivel_punteros > 0)
+    {
+        if (ptr == 0)
+        {
+            if (reservar == 0) return FALLO;
+            else
+            {
+                ptr = reservar_bloque();
+                //fprintf(stderr, "[traducir_bloque_inodo()→ inodo.punterosIndirectos[%d] = %d (reservado BF %d para punteros_nivel%d)]", nivel_punteros, ptr, ptr, nivel_punteros);
+
+                inodo->numBloquesOcupados++;
+                inodo->ctime = time(NULL);
+                if (nivel_punteros == nRangoBL) inodo->punterosIndirectos[nRangoBL - 1] = ptr;
+                else
+                {
+                    buffer[indice] = ptr;
+                    if (bwrite(ptr_ant, buffer) == FALLO) return FALLO;
+                }
+                memset(buffer, 0, BLOCKSIZE);
+            }
+        }
+        else if (bread(ptr, buffer) == FALLO) return FALLO;
+
+        indice = obtener_indice(nblogico, nivel_punteros);
+        ptr_ant = ptr;
+        ptr = buffer[indice];
+        //fprintf(stderr, "[traducir_bloque_inodo()→ inodo.punterosIndirectos[%d] = %d (reservado BF %d para punteros_nivel%d)]", nivel_punteros, ptr, ptr, nivel_punteros);
+        nivel_punteros--;
+    }
+    
+    if (ptr == 0)
+    {
+        if (reservar == 0) return FALLO;
+        else
+        {
+            ptr = reservar_bloque();
+            //fprintf(stderr, "[traducir_bloque_inodo() -> inodo.punterosDirectos[%d] = %d (reservado BF %d para BL %d)]", nblogico, ptr, ptr, nblogico);
+            inodo->numBloquesOcupados++;
+            inodo->ctime = time(NULL);
+
+            if (nRangoBL == 0) inodo->punterosDirectos[nblogico] = ptr;
+            else
+            {
+                buffer[indice] = ptr;
+                if (bwrite(ptr_ant, buffer) == FALLO) return FALLO;
+            }
+        }
+    }
+
+    return ptr;
 }
