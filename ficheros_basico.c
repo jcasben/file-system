@@ -75,12 +75,27 @@ int initMB()
 {
     struct superbloque SB;
     if (bread(posSB, &SB) == FALLO) return FALLO;
+    int posMB = SB.posPrimerBloqueMB;
     int meta_blocks = tamMB(SB.totBloques) + tamAI(SB.totInodos) + tamSB;
+    // Number of blocks occupied by the bits.
+    int occupied_blocks = meta_blocks / BLOCKSIZE / 8;
 
     int bytes_to_1 = meta_blocks / 8;
-    char bufferMB[BLOCKSIZE];
-    for (size_t i = 0; i < bytes_to_1; i++) bufferMB[i] = 255;
+    unsigned char bufferMB[BLOCKSIZE];
+    //memset
+    if (occupied_blocks > 0)
+    {
+        memset(bufferMB, 255, BLOCKSIZE);
+        for (size_t i = 0; i < occupied_blocks; i++)
+        {
+            if (bwrite(posMB++, bufferMB) == FALLO) return FALLO;
+        }
+        
+        bytes_to_1 -= BLOCKSIZE * occupied_blocks;
+        memset(bufferMB, 0, BLOCKSIZE);
+    }
 
+    memset(bufferMB, 255, bytes_to_1);
     // Setting the necesary bits of the last byte to 1 (meta_blocks % 8)
     int bits_to_1 = meta_blocks % 8;
     int last_byte = 0;
@@ -93,9 +108,9 @@ int initMB()
 
     // Write the buffer to the virtual device at the first block
     // of the bitmap
-    if (bwrite(SB.posPrimerBloqueMB, bufferMB) == FALLO) return FALLO;
+    if (bwrite(posMB, bufferMB) == FALLO) return FALLO;
     // Recalculate the number of free blocks at the super block.
-    SB.cantBloquesLibres = SB.cantBloquesLibres - meta_blocks;
+    SB.cantBloquesLibres -= meta_blocks;
     if (bwrite(posSB, &SB) == FALLO) return FALLO;
 
     return EXITO;
@@ -134,7 +149,7 @@ int initAI()
     return EXITO;
 }
 
-//----------------------------- NIVEL 3 (21/02/2023 - )-----------------------------
+//----------------------------- NIVEL 3 (21/02/2023 - 25/02/2024)-----------------------------
 
 /// @brief Modify the value of a bit in the bitmap(MB).
 /// @param nbloque The block number where the bit we want to modify is located.
@@ -209,10 +224,10 @@ int reservar_bloque()
     if (SB.cantBloquesLibres <= 0) return FALLO;
 
     // Create the buffer to read from MB
-    char bufferMB[BLOCKSIZE];
+    unsigned char bufferMB[BLOCKSIZE];
 
     // Create the auxiliar buffer with all the bits set to 1
-    char bufferAux[BLOCKSIZE];
+    unsigned char bufferAux[BLOCKSIZE];
     memset(bufferAux, 255, BLOCKSIZE);
 
     // Iterates through nbloqueMB and finds a block that contains at least one 0
