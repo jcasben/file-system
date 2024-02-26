@@ -121,7 +121,7 @@ int main(int argc, char **argv)
         strftime(mtime, sizeof(mtime), "%a %Y-%m-%d %H:%M:%S", ts);
         ts = localtime(&inode.ctime);
         strftime(ctime, sizeof(ctime), "%a %Y-%m-%d %H:%M:%S", ts);
-        printf("DATOS DEL INODO RESERVADO 1\n");
+        printf("\nDATOS DEL INODO RESERVADO 1\n");
         printf("tipo: %c\n", inode.tipo);
         printf("permisos: %d\n", inode.permisos);
         printf("atime: %s\n", atime);
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
         printf("tamEnBytesLog: %d\n", inode.tamEnBytesLog);
         printf("numBloquesOcupados: %d\n", inode.numBloquesOcupados);
         bread(posSB, &SB);
-        printf("SB.posPrimerInodoLibre = %d", SB.posPrimerInodoLibre);
+        printf("SB.posPrimerInodoLibre = %d\n", SB.posPrimerInodoLibre);
     #endif
     
     if (bumount() < 0)
