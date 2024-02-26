@@ -391,7 +391,7 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     return posInodoReservado;
 }
 
-//----------------------------- NIVEL 4 (25/02/2023 - ) -----------------------------
+//----------------------------- NIVEL 4 (25/02/2023 - 26/02/2024) -----------------------------
 
 /// @brief Optain the range of pointers where the logical block we
 //         are searching is located. We also obtain the adress 
