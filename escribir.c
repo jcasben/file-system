@@ -2,17 +2,19 @@
 
 int main(int argc, char **args)
 {
-    // TODO: escribir.c implementation, not finished.
+    // TODO: preguntar como es lo de escribir
     int noffsets = 5;
     unsigned int offsets[] = {9000, 209000, 30725000, 409605000, 480000000};
-    unsigned int n_first_inode;
+    int n_inode;
+    int b_writed;
 
-    if (argc < 3)
+    if (argc < 4)
     {
         fprintf(
             stderr, 
             RED 
-            "Too few arguments. Usage: ./escribir <nombre_dispositivo> <\"$(cat fichero)\"> <diferentes_inodos>\n" 
+            "Invalid syntax. Usage: ./escribir <nombre_dispositivo> <\"$(cat fichero\">"
+            "<diferentes_inodos>\n" 
             RESET
         );
         return FALLO;
@@ -21,17 +23,45 @@ int main(int argc, char **args)
     // Mount the device.
     if (bmount(args[1]) == FALLO) return FALLO;
     
+    int dif_inodos = atoi(args[3]);
     // Reserve only one inode for all the offsets.
-    if (args[3] == 0)
+    if (dif_inodos == 0)
     {
-        n_first_inode = reservar_inodo('f', 6);
+        if((n_inode = reservar_inodo('f', 6)) == FALLO) return FALLO;
+        
+        for (size_t i = 0; i < noffsets; i++)
+        {
+            printf ("\nNº de inodo reservado: %d\n", n_inode);
+            printf ("offset: %d\n", offsets[i]);
+
+            if((b_writed = mi_write_f(n_inode, args[2], offsets[i], strlen(args[2]))) == FALLO) return FALLO;
+
+            printf ("Bytes escritos: %d\n", b_writed);
+            struct STAT stat;
+            mi_stat_f(n_inode, &stat);
+            printf ("stat.tamEnBytesLOG = %d\n", stat.tamEnBytesLog);
+            printf ("stat.numBloquesOcupados = %d\n", stat.numBloquesOcupados);
+
+        }
     }
     // Reserve one inode for each offset.
-    else if (args[3] == 1)
+    else if (dif_inodos == 1)
     {
         for (size_t i = 0; i < noffsets; i++)
         {
-            n_first_inode = reservar_inodo('f', 6);
+            if ((n_inode = reservar_inodo('f',6)) == FALLO) return FALLO;
+
+            printf ("\nNº de inodo reservado: %d\n", n_inode);
+            printf ("offset: %d\n", offsets[i]);
+
+            if((b_writed = mi_write_f(n_inode, args[2], offsets[i], strlen(args[2]))) == FALLO) return FALLO;
+            
+
+            printf ("Bytes escritos: %d\n", b_writed);
+            struct STAT stat;
+            mi_stat_f(n_inode, &stat);
+            printf ("stat.tamEnBytesLOG = %d\n", stat.tamEnBytesLog);
+            printf ("stat.numBloquesOcupados = %d\n", stat.numBloquesOcupados);
         }
     }
     else
@@ -44,25 +74,6 @@ int main(int argc, char **args)
         );
         return FALLO;
     }
-
-    // Write the content of args[2] to the specified inodes.
-    if (args[3] == 0)
-    {
-        for (size_t i = 0; i < noffsets; i++)
-        {
-            mi_write_f(n_first_inode, args[2], offsets[i], strlen(args[2]));
-        }
-    }
-    // args[3] == 1
-    else
-    {
-        for (size_t i = 0; i < noffsets; i++)
-        {
-            mi_write_f(n_first_inode + i, *args[2], offsets[i], strlen(args[2]));
-        }
-    }
-
-
 
     if (bumount() == FALLO) return FALLO;
 }
