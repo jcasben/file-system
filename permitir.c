@@ -3,7 +3,7 @@
 int main(int argc, char **args)
 {
     // TODO: permitir.c implementation
-    if (argc != 4)
+    if (argc < 4)
     {
         fprintf(
             stderr,
