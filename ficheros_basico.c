@@ -453,14 +453,13 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros)
     return FALLO;
 }
 
-// TODO: Arreglar bug
 /// @brief Obtains the number of the physical block corresponding
 /// to a specified logical block of the indicated inode.
 /// @param inodo indicated inode.
 /// @param nblogico number of the logical block.
 /// @param reservar behavior of the function.
-/// @return if reservar = 0 -> the function is used only to consult if the physical block exists.
-/// If exists returns its position, if not returns FALLO;
+/// @return if reservar = 0 -> the function is used only to consult if the physical block 
+/// exists. If exists returns its position, if not returns FALLO;
 /// if 1 -> the function is used to consult if the physical block exists and to
 /// reserve a physical block. If the physical block exists, it returns its position.
 /// If it doesn't exist, it reserves memory for it and returns its position.
@@ -490,7 +489,8 @@ int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned c
                     fprintf(
                         stderr, 
                         GRAY 
-                        "\n[traducir_bloque_inodo() -> inodo.punterosIndirectos[%d] = %d (reservado BF %d para punteros_nivel%d)]\n" 
+                        "[traducir_bloque_inodo() -> inodo.punterosIndirectos[%d] = %d "
+                        "(reservado BF %d para punteros_nivel%d)]\n" 
                         RESET, 
                         nivel_punteros - 1, ptr, ptr, nivel_punteros
                     );
@@ -551,7 +551,6 @@ int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned c
             }
         }
     }
-    //escribir_inodo(, inodo)
 
     return ptr;
 }
