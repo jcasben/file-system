@@ -2,7 +2,7 @@
 
 #define DEBUGN2 0
 #define DEBUGN3 0
-#define DEBUGN4 1
+#define DEBUGN4 0
 
 int main(int argc, char **argv)
 {
@@ -110,6 +110,7 @@ int main(int argc, char **argv)
         for (size_t i = 0; i < 5; i++)
         {
             traducir_bloque_inodo(&inode, lblocs[i], 1);
+            printf("\n");
         }
         struct tm *ts;
         char atime[80];
