@@ -51,6 +51,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         // Copy the bytes that belong to the first block to the buffer
         //that contains the data of the block.
         memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
+        written_bytes += BLOCKSIZE - desp1;
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
 
         // FASE 2: Intermediate logical blocks.
@@ -63,7 +64,8 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 1);
         if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
-        if (bwrite(buf_bloque, nbfisico) == FALLO) return FALLO;
+        written_bytes += desp2 + 1;
+        if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
         // If we have written further than the end of the file
         // update tamEnBytesLog.
         if (ultimoBL > inode.tamEnBytesLog)
@@ -73,7 +75,8 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         }
         inode.mtime = time(NULL);
         if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
-        // TODO: devolver la cantidad de bytes escritos
+
+        return written_bytes;
     }
 } 
 
@@ -157,7 +160,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         // FASE 2: Intermediate logical blocks (all the block is info that we want to read).
         for (size_t i = primerBL + 1; i < ultimoBL; i++)
         {
-            if (nbfisico = traducir_bloque_inodo(&inode, i, 0) != -1)
+            if ((nbfisico = traducir_bloque_inodo(&inode, i, 0)) != -1)
             {
                 // Read the block, storing it in the buffer.
                 if (bread(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1)) == FALLO) return FALLO;   
@@ -168,7 +171,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         
         // FASE 3: Last logical block.
 
-        if (nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 0) != -1)
+        if ((nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 0)) != -1)
         {
             // Read the last block where the data is stored.
             if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
@@ -176,10 +179,9 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             memcpy(buf_original + read_bytes, buf_bloque, desp2 + 1);
         }
         // Add the number of bytes read to the total number of bytes read.
-        read_bytes += desp2;
+        read_bytes += desp2 + 1;
         return read_bytes;
     }
-    
 }
 
 /// @brief Returns the meta-information of a file/directory: type, permissions, etc.
