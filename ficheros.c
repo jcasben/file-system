@@ -34,11 +34,25 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         int nbfisico = traducir_bloque_inodo(&inode, primerBL, 1);
         char buf_bloque[BLOCKSIZE];
         if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
+
+        //--------------------------------------------------------------------------------
+        printf("---------------------------\n leer el bloque donde hay que escribir: %s \n ---------------------------------------\n", buf_bloque);
+        printf("Ahora hace el memcpy\n");
+        //--------------------------------------------------------------------------------
+
+
         // Copy the new data of buf_original to the buffer that contains
         // the data of the block that we read. Then, write the updated block.       
         memcpy(buf_bloque + desp1, buf_original, nbytes);
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
+        //--------------------------------------------------------------------------------    
+        printf("---------------------------\n buf_original: %s \n ---------------------------------------\n", buf_original);
+        printf("---------------------------\n buf_bloque: %s\n ---------------------------------------\n", buf_bloque);
+        char aux[BLOCKSIZE];
+        if (bread(nbfisico, aux) == FALLO) return FALLO;
+        printf("primerBL == ultimoBL------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux);
 
+        //--------------------------------------------------------------------------------
         return nbytes;
     }
     // Case where the writing affects to more than 1 block.
@@ -54,10 +68,19 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         written_bytes += BLOCKSIZE - desp1;
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
 
+        char aux[BLOCKSIZE];
+        if (bread(nbfisico, aux) == FALLO) return FALLO;
+        printf("FASE 1------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux);
+
         // FASE 2: Intermediate logical blocks.
         for (size_t i = primerBL + 1; i < ultimoBL; i++)
         {
+            nbfisico = traducir_bloque_inodo(&inode, i, 1);
             if (written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1)) == FALLO) return FALLO;
+
+            char aux1[BLOCKSIZE];
+            if (bread(nbfisico, aux) == FALLO) return FALLO;
+            printf("FASE 2------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux1);
         }
         
         // FASE 3: Last logical block.
@@ -66,6 +89,12 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
         written_bytes += desp2 + 1;
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
+
+        
+        if (bread(nbfisico, aux) == FALLO) return FALLO;
+        printf("FASE 3------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux);
+
+
         // If we have written further than the end of the file
         // update tamEnBytesLog.
         if (ultimoBL > inode.tamEnBytesLog)

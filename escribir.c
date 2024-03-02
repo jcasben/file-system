@@ -24,17 +24,23 @@ int main(int argc, char **args)
     if (bmount(args[1]) == FALLO) return FALLO;
     
     int dif_inodos = atoi(args[3]);
+
+    printf("longitud texto: %ld", strlen(args[2]));
+    char buffer[strlen(args[2])];
+    strcpy(buffer, args[2]);
+
     // Reserve only one inode for all the offsets.
     if (dif_inodos == 0)
     {
         if((n_inode = reservar_inodo('f', 6)) == FALLO) return FALLO;
+
         
         for (size_t i = 0; i < noffsets; i++)
         {
             printf ("\nNº de inodo reservado: %d\n", n_inode);
             printf ("offset: %d\n", offsets[i]);
 
-            if((b_writed = mi_write_f(n_inode, args[2], offsets[i], strlen(args[2]))) == FALLO) return FALLO;
+            if((b_writed = mi_write_f(n_inode, buffer, offsets[i], strlen(args[2]))) == FALLO) return FALLO;
 
             printf ("Bytes escritos: %d\n", b_writed);
             struct STAT stat;
@@ -54,7 +60,7 @@ int main(int argc, char **args)
             printf ("\nNº de inodo reservado: %d\n", n_inode);
             printf ("offset: %d\n", offsets[i]);
 
-            if((b_writed = mi_write_f(n_inode, args[2], offsets[i], strlen(args[2]))) == FALLO) return FALLO;
+            if((b_writed = mi_write_f(n_inode, buffer, offsets[i], strlen(args[2]))) == FALLO) return FALLO;
             
 
             printf ("Bytes escritos: %d\n", b_writed);
