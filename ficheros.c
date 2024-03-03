@@ -249,3 +249,44 @@ int mi_chmod_f(unsigned int ninodo, unsigned char permisos)
 
     return EXITO;
 }
+
+//----------------------------- NIVEL 6 (03/02/2023 - ) -----------------------------
+
+/// @brief Truncates a file/directory of the corresponding inode to the
+/// given bytes
+/// @param ninodo inode number
+/// @param nbytes desired size
+/// @return Number of released block if there is no error. FALLO if there is an error.
+int mi_truncar_f(unsigned int ninodo, unsigned int nbytes)
+{   
+    struct inodo inode;
+    int releasedBlocks;
+
+    // Loads the inode
+    if(leer_inodo(ninodo, &inode) == FALLO) return FALLO;
+
+    // Check if the inode has write permissions
+    if((inode.permisos & 2) != 2) return FALLO;
+
+    // Check if nbytes is greater than the inode's EOF
+    if(inode.tamEnBytesLog < nbytes) return FALLO;
+
+    // Calculates the first block to release
+    unsigned int primerBL = (nbytes % BLOCKSIZE == 0) ? 
+                                nbytes/BLOCKSIZE : 
+                                nbytes/BLOCKSIZE + 1;
+
+    // Relase the inode's blocks specified by primerBL
+    if((releasedBlocks = liberar_bloques_inodo(primerBL, &inode)) == FALLO) return FALLO;
+    
+    // Updates numBloquesOcupados, mtime, and ctime
+    inode.tamEnBytesLog = nbytes;
+    inode.numBloquesOcupados -= releasedBlocks;
+    inode.mtime = time(NULL);
+    inode.ctime = time(NULL);
+
+    // Saves the inode
+    if((escribir_inodo(ninodo, &inode)) == FALLO) return FALLO;
+
+    return releasedBlocks;
+}
