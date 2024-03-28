@@ -23,10 +23,10 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         return FALLO;
     }
 
-    int primerBL = offset / BLOCKSIZE;
-    int ultimoBL = (offset + nbytes - 1) / BLOCKSIZE;
-    int desp1 = offset % BLOCKSIZE;
-    int desp2 = (offset + nbytes - 1) % BLOCKSIZE;
+    unsigned int primerBL = (offset / (unsigned) BLOCKSIZE);
+    unsigned int ultimoBL = (offset + nbytes - 1) / (unsigned) BLOCKSIZE;
+    unsigned int desp1 = offset % (unsigned) BLOCKSIZE;
+    unsigned int desp2 = (offset + nbytes - 1) % (unsigned) BLOCKSIZE;
 
     // Treat the case in which the buffer fits inside 1 block.
     if (primerBL == ultimoBL)
@@ -35,78 +35,57 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         char buf_bloque[BLOCKSIZE];
         if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
 
-        //--------------------------------------------------------------------------------
-        printf("---------------------------\n leer el bloque donde hay que escribir: %s \n ---------------------------------------\n", buf_bloque);
-        printf("Ahora hace el memcpy\n");
-        //--------------------------------------------------------------------------------
-
-
         // Copy the new data of buf_original to the buffer that contains
         // the data of the block that we read. Then, write the updated block.       
         memcpy(buf_bloque + desp1, buf_original, nbytes);
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
-        //--------------------------------------------------------------------------------    
-        printf("---------------------------\n buf_original: %s \n ---------------------------------------\n", buf_original);
-        printf("---------------------------\n buf_bloque: %s\n ---------------------------------------\n", buf_bloque);
-        char aux[BLOCKSIZE];
-        if (bread(nbfisico, aux) == FALLO) return FALLO;
-        printf("primerBL == ultimoBL------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux);
 
-        //--------------------------------------------------------------------------------
-        return nbytes;
+        written_bytes = nbytes;
     }
     // Case where the writing affects to more than 1 block.
     else
     {
+        fprintf(stderr, RED "Esto rula?\n" RESET);
         // FASE 1: First logical block
         int nbfisico = traducir_bloque_inodo(&inode, primerBL, 1);
+        fprintf(stderr, RED "Esto rula?\n" RESET);
         char buf_bloque[BLOCKSIZE];
         if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
         // Copy the bytes that belong to the first block to the buffer
         //that contains the data of the block.
+        fprintf(stderr, RED "Esto rula?\n" RESET);
         memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
-        written_bytes += BLOCKSIZE - desp1;
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
-
-        char aux[BLOCKSIZE];
-        if (bread(nbfisico, aux) == FALLO) return FALLO;
-        printf("FASE 1------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux);
-
+        written_bytes += BLOCKSIZE - desp1;
+        fprintf(stderr, RED "Esto rula?\n" RESET);
         // FASE 2: Intermediate logical blocks.
         for (size_t i = primerBL + 1; i < ultimoBL; i++)
         {
             nbfisico = traducir_bloque_inodo(&inode, i, 1);
-            if (written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1)) == FALLO) return FALLO;
-
-            char aux1[BLOCKSIZE];
-            if (bread(nbfisico, aux) == FALLO) return FALLO;
-            printf("FASE 2------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux1);
+            if (written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == FALLO)
+                return FALLO;
         }
-        
+        fprintf(stderr, RED "Esto rula? despues for\n" RESET);
         // FASE 3: Last logical block.
         nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 1);
         if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
-        written_bytes += desp2 + 1;
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
+        written_bytes += desp2 + 1;
 
         
-        if (bread(nbfisico, aux) == FALLO) return FALLO;
-        printf("FASE 3------------------------------------------------------\n buf_bloque: %s\n ---------------------------------------\n", aux);
-
-
-        // If we have written further than the end of the file
-        // update tamEnBytesLog.
-        if (ultimoBL > inode.tamEnBytesLog)
-        {
-            inode.tamEnBytesLog = ultimoBL;
-            inode.ctime = time(NULL);
-        }
-        inode.mtime = time(NULL);
-        if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
-
-        return written_bytes;
     }
+    // If we have written further than the end of the file
+    // update tamEnBytesLog.
+    if (inode.tamEnBytesLog < (offset + written_bytes))
+    {
+        inode.tamEnBytesLog = (offset + written_bytes);
+        inode.ctime = time(NULL);
+    }
+    inode.mtime = time(NULL);
+    if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
+
+    return written_bytes;
 } 
 
 /// @brief Reads information from a file/directory and stores it in a memory buffer.
@@ -139,10 +118,10 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         nbytes = inode.tamEnBytesLog - offset;
     }
 
-    int primerBL = offset / BLOCKSIZE;
-    int ultimoBL = (offset + nbytes - 1) / BLOCKSIZE;
-    int desp1 = offset % BLOCKSIZE;
-    int desp2 = (offset + nbytes - 1) % BLOCKSIZE;
+    unsigned int primerBL = (offset / (unsigned) BLOCKSIZE);
+    unsigned int ultimoBL = (offset + nbytes - 1) / (unsigned) BLOCKSIZE;
+    unsigned int desp1 = offset % (unsigned) BLOCKSIZE;
+    unsigned int desp2 = (offset + nbytes - 1) % (unsigned) BLOCKSIZE;
 
     if(primerBL == ultimoBL)
     {
@@ -209,6 +188,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         }
         // Add the number of bytes read to the total number of bytes read.
         read_bytes += desp2 + 1;
+
         return read_bytes;
     }
 }

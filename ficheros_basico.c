@@ -361,7 +361,12 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     // Check if there are free inodes
     if (SB.cantInodosLibres == 0)
     {
-        printf(RED "ERROR: there aren't free inodes." RESET);
+        fprintf(
+            stderr,
+            RED 
+            "ERROR: there aren't free inodes." 
+            RESET
+            );
         return FALLO;
     }
     // Modify the position of the first free inode and save the
@@ -425,7 +430,12 @@ int obtener_nRangoBL(struct inodo *inodo, unsigned int nblogico, unsigned int *p
     else
     {
         *ptr = 0;
-        printf(RED "Bloque lógico fuera de rango" RESET);
+        fprintf(
+            stderr,
+            RED 
+            "Bloque lógico fuera de rango" 
+            RESET
+            );
         return FALLO;
     }
 }

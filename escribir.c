@@ -53,15 +53,16 @@ int main(int argc, char **args)
     // Reserve one inode for each offset.
     else if (dif_inodos == 1)
     {
+        fprintf(stderr, RED "Diferentes inodos = true\n" RESET);
         for (size_t i = 0; i < noffsets; i++)
         {
             if ((n_inode = reservar_inodo('f',6)) == FALLO) return FALLO;
-
             printf ("\nNº de inodo reservado: %d\n", n_inode);
             printf ("offset: %d\n", offsets[i]);
 
             if((b_writed = mi_write_f(n_inode, buffer, offsets[i], strlen(args[2]))) == FALLO) return FALLO;
             
+            fprintf(stderr, RED "Escribiendo en inodo %d\n" RESET, n_inode);
 
             printf ("Bytes escritos: %d\n", b_writed);
             struct STAT stat;

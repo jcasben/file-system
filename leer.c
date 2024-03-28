@@ -72,7 +72,7 @@ int main(int argc, char **args)
     {
         fprintf(
             stderr,
-            "Number of bytes read = %d\n"
+            "\nNumber of bytes read = %d\n"
             "Size in logical bytes = %d\n", 
             total_read_bytes,
             stat.tamEnBytesLog
