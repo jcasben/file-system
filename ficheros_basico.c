@@ -609,8 +609,9 @@ int liberar_inodo(unsigned int ninodo)
 /// @return the number of freed blocks.
 int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 {
-    unsigned int ultimoBL, nivel_punteros = 3, indice, ptr = 0, nBL = primerBL;
-    int nRangoBL = 0, liberados = 0, eof = 0, bloqueLiberado;
+    unsigned int ultimoBL, nivel_punteros = 3, ptr = 0, nBL = primerBL;
+    int nRangoBL = 0, liberados = 0, eof = 0, bloqueLiberado,
+    numbreads = 0, numbwrites = 0;
 
     if (inodo->tamEnBytesLog == 0) return 0;
 
@@ -619,8 +620,24 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
         ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE - 1;
     else ultimoBL = inodo->tamEnBytesLog / BLOCKSIZE;
     
+    fprintf(
+        stderr, 
+        BLUE "[liberar_bloques_inodo() -> primerBL: %d, ultimoBL: %d]\n" RESET,
+        primerBL,
+        ultimoBL
+    );
+    
+
     liberados += liberar_bloques_recursivo(
-        &nBL, nRangoBL, ptr, nivel_punteros, inodo, &eof, ultimoBL, &bloqueLiberado
+        &nBL, nRangoBL, ptr, nivel_punteros, inodo, &eof, ultimoBL, &bloqueLiberado, &numbreads, &numbreads
+    );
+
+    fprintf(
+        stderr, 
+        BLUE "[liberar_bloques_inodo() -> total bloques liberados: %d, total breads: %d, totatl bwrites: %d]\n" RESET,
+        liberados,
+        numbreads,
+        numbwrites
     );
 
     return liberados;
@@ -628,8 +645,9 @@ int liberar_bloques_inodo(unsigned int primerBL, struct inodo *inodo)
 
 int liberar_bloques_recursivo(
     unsigned int *nBL, int nRangoBL, unsigned int ptr, int nivel_punteros, 
-    struct inodo *inodo, int *eof, int ultimoBL, int *bloqueLiberado
-    )
+    struct inodo *inodo, int *eof, int ultimoBL, int *bloqueLiberado, int *numbreads,
+    int *numbwrites
+)
 {
     int liberados = 0, indice, aux;
     unsigned int bloquePunteros[NPUNTEROS], bloquePunteros_Aux[NPUNTEROS], bufferCeros[NPUNTEROS];
@@ -656,11 +674,25 @@ int liberar_bloques_recursivo(
             if (*nBL > ultimoBL) *eof = 1; // End of file
         }   
     }
-
     // Does not exist data block
     else if (ptr == 0)
     {
         //saltar los bloques que no sea necesario explorar al valer 0 un puntero
+        if(nivel_punteros == 1) 
+        {
+            *nBL += 1;
+        }
+        else if (nivel_punteros == 2)
+        {
+            *nBL += NPUNTEROS;
+        }
+        else // nivel_punteros == 3
+        {
+            *nBL += NPUNTEROS*NPUNTEROS;
+        }
+
+        if (*nBL > ultimoBL) *eof = 1; // End of file
+
     }
     else if (nivel_punteros > 0) // Indirect pointers
     {
@@ -671,6 +703,7 @@ int liberar_bloques_recursivo(
         aux = (indice > 0) ? 1 : 0;
         // Read a block
         bread(ptr, bloquePunteros);
+        *numbreads += 1;
         // Save a copy of the block
         memcpy(bloquePunteros_Aux, bloquePunteros, BLOCKSIZE);
 
@@ -694,7 +727,7 @@ int liberar_bloques_recursivo(
                 {
                     liberados += liberar_bloques_recursivo(
                         nBL, nRangoBL, bloquePunteros[indice], nivel_punteros-1,
-                        inodo, eof, ultimoBL, bloqueLiberado
+                        inodo, eof, ultimoBL, bloqueLiberado, numbreads, numbwrites
                         );
                     // If aux == 1
                     if (aux != 0) aux = 0; // Set it to 0
@@ -706,6 +739,18 @@ int liberar_bloques_recursivo(
             {
                 // Saltar los bloques que no es necesario explorar al eliminar un bloque 
                 // de punteros
+                if(nivel_punteros == 1) 
+                {
+                    *nBL += 1;
+                }
+                else if (nivel_punteros == 2)
+                {
+                    *nBL += NPUNTEROS;
+                }
+                else // nivel_punteros == 3
+                {
+                    *nBL += NPUNTEROS*NPUNTEROS;
+                }
             }
             
             if (*nBL > ultimoBL) *eof = 1; // End of file
@@ -715,7 +760,10 @@ int liberar_bloques_recursivo(
         {
             // If the block is not equal to the original
             if (memcmp(bloquePunteros, bufferCeros, BLOCKSIZE) != 0)
+            {
                 bwrite(ptr, bloquePunteros);
+                *numbwrites += 1;
+            }
             else
             {
                 liberar_bloque(ptr);
@@ -724,13 +772,13 @@ int liberar_bloques_recursivo(
             }
             liberados++;
         }
-
     }
 
     // If we didn't finish, recursive call
     if (!*eof && nivel_punteros == nRangoBL)
         liberados += liberar_bloques_recursivo(
-            nBL, nRangoBL, 0, 0, inodo, eof, ultimoBL, bloqueLiberado
+            nBL, nRangoBL, 0, 0, inodo, eof, ultimoBL, 
+            bloqueLiberado, numbreads, numbwrites
         );
     
     return liberados;
