@@ -67,8 +67,6 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
         written_bytes += desp2 + 1;
-
-        
     }
     // If we have written further than the end of the file
     // update tamEnBytesLog.
