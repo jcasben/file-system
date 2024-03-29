@@ -1,6 +1,6 @@
 #include "ficheros.h"
 
-//----------------------------- NIVEL 5 (26/02/2023 - ) -----------------------------
+//----------------------------- NIVEL 5 (26/02/2023 - 29/03/2024) -----------------------------
 
 /// @brief Writes the content of a buffer on a file/directory.
 /// @param ninodo id of the inode where we will write.
@@ -45,27 +45,22 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     // Case where the writing affects to more than 1 block.
     else
     {
-        fprintf(stderr, RED "Esto rula?\n" RESET);
         // FASE 1: First logical block
         int nbfisico = traducir_bloque_inodo(&inode, primerBL, 1);
-        fprintf(stderr, RED "Esto rula?\n" RESET);
         char buf_bloque[BLOCKSIZE];
         if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
         // Copy the bytes that belong to the first block to the buffer
         //that contains the data of the block.
-        fprintf(stderr, RED "Esto rula?\n" RESET);
         memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
         if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
         written_bytes += BLOCKSIZE - desp1;
-        fprintf(stderr, RED "Esto rula?\n" RESET);
         // FASE 2: Intermediate logical blocks.
         for (size_t i = primerBL + 1; i < ultimoBL; i++)
         {
             nbfisico = traducir_bloque_inodo(&inode, i, 1);
-            if (written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == FALLO)
+            if ((written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE)) == FALLO)
                 return FALLO;
         }
-        fprintf(stderr, RED "Esto rula? despues for\n" RESET);
         // FASE 3: Last logical block.
         nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 1);
         if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
@@ -105,6 +100,8 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     if ((inode.permisos & 4) != 4) 
     {
         fprintf(stderr, RED "ERROR: The specified inode doesn't have reading permissions\n" RESET);
+        printf("\nbytes read: %d\n", read_bytes);
+        printf("logical byte size: %d\n", inode.tamEnBytesLog);
         return FALLO;
     }
 
@@ -171,7 +168,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             if ((nbfisico = traducir_bloque_inodo(&inode, i, 0)) != -1)
             {
                 // Read the block, storing it in the buffer.
-                if (bread(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1)) == FALLO) return FALLO;   
+                if (bread(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == FALLO) return FALLO;   
             }
             // Add the number of bytes read (BLOCKSIZE) to the total number of bytes read.
             read_bytes += BLOCKSIZE;
