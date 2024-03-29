@@ -2,7 +2,6 @@
 
 int main(int argc, char **args)
 {
-    // TODO: preguntar como es lo de escribir
     int noffsets = 5;
     unsigned int offsets[] = {9000, 209000, 30725000, 409605000, 480000000};
     int n_inode;
@@ -53,7 +52,6 @@ int main(int argc, char **args)
     // Reserve one inode for each offset.
     else if (dif_inodos == 1)
     {
-        fprintf(stderr, RED "Diferentes inodos = true\n" RESET);
         for (size_t i = 0; i < noffsets; i++)
         {
             if ((n_inode = reservar_inodo('f',6)) == FALLO) return FALLO;
@@ -62,8 +60,6 @@ int main(int argc, char **args)
 
             if((b_writed = mi_write_f(n_inode, buffer, offsets[i], strlen(args[2]))) == FALLO) return FALLO;
             
-            fprintf(stderr, RED "Escribiendo en inodo %d\n" RESET, n_inode);
-
             printf ("Bytes escritos: %d\n", b_writed);
             struct STAT stat;
             mi_stat_f(n_inode, &stat);
