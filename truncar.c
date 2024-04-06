@@ -1,3 +1,10 @@
+/*
+    Autores:
+        - Marc Link Cladera
+        - Carlos Gálvez Mena
+        - Jesús Castillo Benito
+*/
+
 #include "ficheros.h"
 
 int main(int argc, char **argsv)
@@ -49,7 +56,7 @@ int main(int argc, char **argsv)
     ts = localtime(&stats.ctime);
     strftime(ctime, sizeof(ctime), "%a %Y-%m-%d %H:%M:%S", ts);
 
-    printf("DATOS INODO %s:\n", argsv[2]);
+    printf("\nDATOS INODO %s:\n", argsv[2]);
     printf("tipo = %c\n", stats.tipo);
     printf("atime: %s\n", atime);
     printf("ctime: %s\n", ctime);

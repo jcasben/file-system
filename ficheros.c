@@ -1,3 +1,10 @@
+/*
+    Autores:
+        - Marc Link Cladera
+        - Carlos Gálvez Mena
+        - Jesús Castillo Benito
+*/
+
 #include "ficheros.h"
 
 //----------------------------- NIVEL 5 (26/02/2023 - 29/03/2024) -----------------------------
@@ -98,8 +105,8 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     if ((inode.permisos & 4) != 4) 
     {
         fprintf(stderr, RED "ERROR: The specified inode doesn't have reading permissions\n" RESET);
-        printf("\nbytes read: %d\n", read_bytes);
-        printf("logical byte size: %d\n", inode.tamEnBytesLog);
+        fprintf(stderr, "\nbytes read: %d\n", read_bytes);
+        fprintf(stderr, "logical byte size: %d\n", inode.tamEnBytesLog);
         return FALLO;
     }
 
