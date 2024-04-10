@@ -586,7 +586,7 @@ int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned c
     return ptr;
 }
 
-//-------------------------- NIVEL 6 (03/02/2023 - ) --------------------------
+//-------------------------- NIVEL 6 (03/02/2023 - 06/04/2024) --------------------------
 
 /// @brief
 /// @param ninodo
@@ -678,7 +678,7 @@ int liberar_directos(unsigned int *nBL, unsigned int ultimoBL, struct inodo *ino
 
     for (int d = *nBL; d < DIRECTOS && !*eof; d++)
     {
-        if (inodo->punterosDirectos[*nBL]) 
+        if (inodo->punterosDirectos[*nBL])  
         {
             liberar_bloque(inodo->punterosDirectos[*nBL]);
             #if DEBUGN6
@@ -751,7 +751,6 @@ int liberar_indirectos_recursivo(
             } 
             else 
             {
-                //printf("vacío, i:%d, nBL:%d\n", i, *nBL); 
                 switch (nivel_punteros)
                 {
                     case 1: *nBL = *nBL+1 ; break;
@@ -771,7 +770,7 @@ int liberar_indirectos_recursivo(
                     fprintf(
                         stderr, 
                         ORANGE 
-                        "[liberar_indirectos_recursivo() -> salvado BF %d de punteros_nivel%d correspondiente al BL %d\n" 
+                        "[liberar_indirectos_recursivo() -> salvado BF %d de punteros_nivel%d correspondiente al BL %d]\n" 
                         RESET, 
                         *ptr, nivel_punteros, *nBL
                     ); 
@@ -784,7 +783,7 @@ int liberar_indirectos_recursivo(
                     fprintf(
                         stderr, 
                         GRAY 
-                        "[liberar_indirectos_recursivo() -> liberado BF %d de punteros_nivel%d] correspondiente al BL %d\n" 
+                        "[liberar_indirectos_recursivo() -> liberado BF %d de punteros_nivel%d correspondiente al BL %d]\n" 
                         RESET, 
                         *ptr, nivel_punteros, *nBL
                     );
