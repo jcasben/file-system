@@ -7,8 +7,9 @@
 
 #include "ficheros.h"
 
-#define TAMBUFFER (BLOCKSIZE * 4 + 150)
+//#define TAMBUFFER (BLOCKSIZE * 4 + 150)
 //#define TAMBUFFER (BLOCKSIZE * 4)
+#define TAMBUFFER 1500
 
 int main(int argc, char **args)
 {
