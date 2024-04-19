@@ -5,7 +5,7 @@
         - Jesús Castillo Benito
 */
 
-#include "ficheros_basico.h"
+#include "directorios.h"
 
 #define DEBUGN2 0
 #define DEBUGN3 0

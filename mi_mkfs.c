@@ -5,7 +5,7 @@
         - Jesús Castillo Benito
 */
 
-#include "ficheros_basico.h"
+#include "directorios.h"
 
 int main(int argc, char **argv)
 {
