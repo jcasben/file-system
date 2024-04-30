@@ -5,12 +5,11 @@
 /// Given a string that starts with '/', divides its content in two parts:
 /// * inicial: content inside the first two '/' (directory name) | if there's not a second '/' (file name);
 /// * final: the rest of the content of the string.
-///
 /// \param camino string that contains the path
-/// \param inicial
-/// \param final
-/// \param tipo
-/// \return
+/// \param inicial first part of the path
+/// \param final second part of the path
+/// \param tipo 'd' if the path refers to a directory; 'f' if the path refers to a file.
+/// \return EXITO if the operation was successfull.
 int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
 {
     if (camino == NULL || inicial == NULL || final == NULL || tipo == NULL || *camino != '/') 
@@ -19,11 +18,11 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
     }
 
     char *aux = (char *)camino + 1;
-    char *barPos = strchr((aux + 1), '/');
+    char *barPos = strchr(aux, '/');
 
     if(barPos == NULL)
     {
-        strcpy(inicial, aux + 1);
+        strcpy(inicial, aux);
         memset(final, 0, strlen(final));
         *tipo = 'f';
     }
@@ -219,6 +218,8 @@ int buscar_entrada(
     return buscar_entrada(end, p_inodo_dir, p_inodo, p_entrada, reservar, permisos);
 }
 
+/// Prints the corresponding error guiven its number
+/// \param error number of the error.
 void mostrar_error_buscar_entrada(int error)
 {
     switch (error)
