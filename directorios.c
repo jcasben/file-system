@@ -49,7 +49,6 @@ int buscar_entrada(
     char start[sizeof(entry.nombre)];
     char final[strlen(camino_parcial)];
     char type;
-    int num_entries_inode, entry_inode;
 
     if (strcmp("/", camino_parcial) == 0)
     {
@@ -64,14 +63,15 @@ int buscar_entrada(
     if (extraer_camino(camino_parcial, start, final, &type) == FALLO)
         return ERROR_CAMINO_INCORRECTO;
 
+    // Fallo al leer el inodo
+    printf("%d\n", *p_inodo_dir);
     leer_inodo(*p_inodo_dir, &inode);
     if ((inode.permisos & 4) != 4) return ERROR_PERMISO_LECTURA;
 
     struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
     memset(buffer_lec, 0, BLOCKSIZE);
     //calcular cantidad de entradas inodo
-    num_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada);
-    entry_inode = 0;
+    int num_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada), entry_inode = 0;
 
     if (num_entries_inode > 0)
     {
@@ -99,13 +99,13 @@ int buscar_entrada(
         
     }
 
-    if ((strcmp(start, entry.nombre) != 0) && entry_inode == num_entries_inode)
+    if (strcmp(start, entry.nombre) != 0 && entry_inode == num_entries_inode)
     {
         switch (reservar)
         {
         case 0:
             return ERROR_NO_EXISTE_ENTRADA_CONSULTA;
-            break;
+
         case 1:
             
             //Creamos la entrada en el directorio referenciado por *p_inodo_dir
@@ -119,35 +119,41 @@ int buscar_entrada(
             {
                 return ERROR_PERMISO_ESCRITURA;
             }
-            else
+
+            strcpy(entry.nombre, start);
+            if(type == 'd')
             {
-                strcpy(entry.nombre, start);
-                if(type == 'd')
+                if (strcmp(final, "/") == 0)
                 {
-                    if (strcmp(final, "/") == 0)
-                    {
-                        entry.ninodo = reservar_inodo('d', permisos);
-                    }
-                    else
-                    {
-                        return ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO;
-                    }
+                    entry.ninodo = reservar_inodo('d', permisos);
                 }
                 else
                 {
-                    entry.ninodo = reservar_inodo('f', permisos);
+                    return ERROR_NO_EXISTE_DIRECTORIO_INTERMEDIO;
                 }
-                //escribir entrada en el directorio padre
-                if(mi_write_f(*p_inodo_dir, &entry, *p_entrada * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+            }
+            else
+            {
+                entry.ninodo = reservar_inodo('f', permisos);
+            }
+            //escribir entrada en el directorio padre
+            if(mi_write_f(
+                *p_inodo_dir,
+                &entry,
+                *p_entrada * sizeof(struct entrada),
+                sizeof(struct entrada)
+            ) == FALLO)
+            {
+                if (entry.ninodo != FALLO)
                 {
-                    if (entry.ninodo != FALLO)
-                    {
-                        liberar_inodo(entry.ninodo);
-                    }
-                    return FALLO;
+                    liberar_inodo(entry.ninodo);
                 }
-            }            
+                return FALLO;
+            }
+
             break;
+        default:
+            return FALLO;
         }
     }
 
@@ -161,12 +167,11 @@ int buscar_entrada(
         *p_entrada = entry_inode;
         return EXITO;
     }
-    else
-    {
-        *p_inodo_dir = entry.ninodo;
-        return buscar_entrada(final, p_inodo_dir, p_inodo, p_entrada, reservar, permisos); 
-    }
-    return EXITO;
+    *p_inodo_dir = entry.ninodo;
+    *p_inodo = 0;
+    *p_entrada = 0;
+
+    return buscar_entrada(final, p_inodo_dir, p_inodo, p_entrada, reservar, permisos);
 }
 
 void mostrar_error_buscar_entrada(int error)
