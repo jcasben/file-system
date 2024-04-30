@@ -7,7 +7,7 @@
 
 #include "directorios.h"
 
-#define DEBUGN1 0
+#define DEBUGN1 1
 #define DEBUGN2 0
 #define DEBUGN3 0
 #define DEBUGN4 0
