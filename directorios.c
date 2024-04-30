@@ -53,9 +53,9 @@ int buscar_entrada(
     unsigned int *p_entrada, char reservar, unsigned char permisos
 )
 {
-    struct entrada entry;
+    struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
     struct inodo inode;
-    char beginning[sizeof(entry.nombre)];
+    char beginning[sizeof(buffer_lec[0].nombre)];
     char end[strlen(camino_parcial)];
     char type;
 
@@ -84,7 +84,6 @@ int buscar_entrada(
     leer_inodo(*p_inodo_dir, &inode);
     if ((inode.permisos & 4) != 4) return ERROR_PERMISO_LECTURA;
 
-    struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
     memset(buffer_lec, 0, BLOCKSIZE);
     //calcular cantidad de entradas inodo
     int cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada), entry_inode_number = 0;
@@ -94,8 +93,10 @@ int buscar_entrada(
         int found = 0;
         int nbloc = 0;
         
-        while((entry_inode_number < cant_entries_inode) && (strcmp(beginning, entry.nombre) != 0))
+        while((entry_inode_number < cant_entries_inode) && (strcmp(beginning, buffer_lec[entry_inode_number].nombre) != 0))
         {
+            entry_inode_number = 0;
+            memset(buffer_lec, 0, BLOCKSIZE);
             mi_read_f(*p_inodo_dir, buffer_lec, nbloc * (BLOCKSIZE / sizeof(struct entrada)), BLOCKSIZE);
             for (size_t j = 0; (j < BLOCKSIZE / sizeof(struct entrada)) && !found ; j++)
             {
@@ -108,14 +109,14 @@ int buscar_entrada(
                     *p_inodo = buffer_lec[j].ninodo;
                     break;  
                 }
+                entry_inode_number++;
             }
-            memset(buffer_lec, 0, BLOCKSIZE);
-            entry_inode_number++;
+            nbloc++;
         }
         
     }
 
-    if (strcmp(beginning, entry.nombre) != 0 && entry_inode_number == cant_entries_inode)
+    if (strcmp(beginning, buffer_lec[entry_inode_number].nombre) != 0 && entry_inode_number == cant_entries_inode)
     {
         switch (reservar)
         {
@@ -136,19 +137,19 @@ int buscar_entrada(
                 return ERROR_PERMISO_ESCRITURA;
             }
 
-            strcpy(entry.nombre, beginning);
+            strcpy(buffer_lec[entry_inode_number].nombre, beginning);
             if(type == 'd')
             {
                 if (strcmp(end, "/") == 0)
                 {
-                    entry.ninodo = reservar_inodo('d', permisos);
+                    buffer_lec[entry_inode_number].ninodo = reservar_inodo('d', permisos);
 #if DEBUGN7
                     fprintf(
                             stderr,
                             GRAY
                             "[buscar_entrada() -> reservado inodo %d tipo %c con permisos %d para %s]\n"
                             RESET,
-                            entry.ninodo, type, permisos, beginning
+                            buffer_lec[entry_inode_number].ninodo, type, permisos, beginning
                     );
 #endif
                 }
@@ -159,28 +160,28 @@ int buscar_entrada(
             }
             else
             {
-                entry.ninodo = reservar_inodo('f', permisos);
+                buffer_lec[entry_inode_number].ninodo = reservar_inodo('f', permisos);
 #if DEBUGN7
                 fprintf(
                         stderr,
                         GRAY
                         "[buscar_entrada() -> reservado inodo %d tipo %c con permisos %d para %s]\n"
                         RESET,
-                        entry.ninodo, type, permisos, beginning
+                        buffer_lec[entry_inode_number].ninodo, type, permisos, beginning
                 );
 #endif
             }
             //escribir entrada en el directorio padre
             if(mi_write_f(
                 *p_inodo_dir,
-                &entry,
+                &buffer_lec[entry_inode_number],
                 *p_entrada * sizeof(struct entrada),
                 sizeof(struct entrada)
             ) == FALLO)
             {
-                if (entry.ninodo != FALLO)
+                if (buffer_lec[entry_inode_number].ninodo != FALLO)
                 {
-                    liberar_inodo(entry.ninodo);
+                    liberar_inodo(buffer_lec[entry_inode_number].ninodo);
                 }
                 return FALLO;
             }
@@ -190,7 +191,7 @@ int buscar_entrada(
                         GRAY
                         "[buscar_entrada() -> creada entrada: %s, %d]\n"
                         RESET,
-                        entry.nombre, entry.ninodo
+                        buffer_lec[entry_inode_number].nombre, buffer_lec[entry_inode_number].ninodo
                 );
 #endif
 
@@ -206,12 +207,12 @@ int buscar_entrada(
         {
             return ERROR_ENTRADA_YA_EXISTENTE;
         }
-        *p_inodo = entry.ninodo;
+        *p_inodo = buffer_lec[entry_inode_number].ninodo;
         *p_entrada = entry_inode_number;
 
         return EXITO;
     }
-    *p_inodo_dir = entry.ninodo;
+    *p_inodo_dir = buffer_lec[entry_inode_number].ninodo;
     *p_inodo = 0;
     *p_entrada = 0;
 
