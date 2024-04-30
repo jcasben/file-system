@@ -6,8 +6,8 @@
 */
 
 #include "ficheros_basico.h"
-#define DEBUGN5 1
-#define DEBUGN6 1
+#define DEBUGN5 0
+#define DEBUGN6 0
 
 //----------------------------- NIVEL 2 (15/02/2023 - 21/02/2023) -----------------------------
 
