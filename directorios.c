@@ -7,7 +7,7 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
         return FALLO; // Error: puntero nulo o camino no empieza por '/'
     }
 
-    char *aux = (char *)camino;
+    char *aux = (char *)camino + 1;
     char *barPos = strchr((aux + 1), '/');
 
     if(barPos == NULL)
@@ -18,11 +18,21 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
     }
     else
     {
-        strcpy(inicial, strtok(aux, "/"));
-        *final = '/'; 
+        /*
+        const char *delim = "/";
+        const char *slice = strtok(aux, delim);
+        strcpy(inicial, slice);
+        *final = '/';
 
-        char *trim = strtok(NULL, "\0");
+        const char *trim = strtok(NULL, "\0");
         if(trim != NULL) strcpy(final+1, trim);
+        *tipo = 'd';
+        */
+        strcpy(final, barPos);
+        const int aux_len = strlen(aux);
+        const int final_len = strlen(final);
+        strncpy(inicial, aux, aux_len - final_len);
+        inicial[aux_len - final_len] = '\0';
         *tipo = 'd';
     }
 
@@ -100,9 +110,6 @@ int buscar_entrada(
             
             //Creamos la entrada en el directorio referenciado por *p_inodo_dir
             //si es fichero no permitir escritura
-
-            struct entrada entry;
-
             if(inode.tipo == 'f') 
             {
                 return ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO;
@@ -141,7 +148,6 @@ int buscar_entrada(
                 }
             }            
             break;
-        default:
         }
     }
 
