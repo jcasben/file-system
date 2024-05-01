@@ -2,6 +2,8 @@
 
 #define DEBUGN7 1
 
+//----------------------------- NIVEL 7 (11/04/2023 - 01/05/2024) -----------------------------
+
 /// Given a string that starts with '/', divides its content in two parts:
 /// * inicial: content inside the first two '/' (directory name) | if there's not a second '/' (file name);
 /// * final: the rest of the content of the string.
@@ -12,9 +14,10 @@
 /// \return EXITO if the operation was successfull.
 int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
 {
+    //If the path is null or if path doesn't start with '/'
     if (camino == NULL || inicial == NULL || final == NULL || tipo == NULL || *camino != '/') 
     {
-        return FALLO; // Error: puntero nulo o camino no empieza por '/'
+        return FALLO;
     }
 
     char *aux = (char *)camino + 1;
@@ -39,14 +42,14 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
     return EXITO;
 }
 
-///
-/// \param camino_parcial
-/// \param p_inodo_dir
-/// \param p_inodo
-/// \param p_entrada
-/// \param reservar
-/// \param permisos
-/// \return
+/// Search an entry in our file system given a path
+/// \param camino_parcial path to the entry
+/// \param p_inodo_dir number of the inode of actual directory
+/// \param p_inodo inode number of the specified entry
+/// \param p_entrada number of entry
+/// \param reservar 0 if we only want to consult; 1 if we want to create a new entry
+/// \param permisos permissions of the new entries
+/// \return the inode number of the desired entry
 int buscar_entrada(
     const char *camino_parcial, unsigned int *p_inodo_dir, unsigned int *p_inodo, 
     unsigned int *p_entrada, char reservar, unsigned char permisos
@@ -74,7 +77,7 @@ int buscar_entrada(
     fprintf(
             stderr,
             GRAY
-            "[buscar_entrada() -> inicial: %s, end: %s, reservar: %d]\n"
+            "[buscar_entrada() -> inicial: %s, final: %s, reservar: %d]\n"
             RESET,
             beginning, end, reservar
     );
@@ -84,12 +87,11 @@ int buscar_entrada(
     if ((inode.permisos & 4) != 4) return ERROR_PERMISO_LECTURA;
 
     memset(buffer_lec, 0, BLOCKSIZE);
-    //calcular cantidad de entradas inodo
+    //Calculate the number of entrys in the inode
     int cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada), entry_inode_number = 0;
 
     if (cant_entries_inode > 0)
     {
-        int found = 0;
         int nbloc = 0;
         
         while((entry_inode_number < cant_entries_inode) && (strcmp(beginning, buffer_lec[entry_inode_number].nombre) != 0))
@@ -97,14 +99,13 @@ int buscar_entrada(
             entry_inode_number = 0;
             memset(buffer_lec, 0, BLOCKSIZE);
             mi_read_f(*p_inodo_dir, buffer_lec, nbloc * (BLOCKSIZE / sizeof(struct entrada)), BLOCKSIZE);
-            for (size_t j = 0; (j < BLOCKSIZE / sizeof(struct entrada)) && !found ; j++)
+            for (size_t j = 0; j < cant_entries_inode; j++)
             {
-                // incrementar el numero de entradas revisadas.
+                //Increment the number of revisde entries
                 *p_entrada = *p_entrada + 1;
-                //comparar nombre con entrada
+                //Check if it's the entry that we are searching
                 if (strcmp(buffer_lec[j].nombre, beginning) == 0)
                 {
-                    found = 1;
                     *p_inodo = buffer_lec[j].ninodo;
                     break;  
                 }
@@ -112,7 +113,6 @@ int buscar_entrada(
             }
             nbloc++;
         }
-        
     }
 
     if (strcmp(beginning, buffer_lec[entry_inode_number].nombre) != 0 && entry_inode_number == cant_entries_inode)
@@ -124,8 +124,8 @@ int buscar_entrada(
 
         case 1:
             
-            //Creamos la entrada en el directorio referenciado por *p_inodo_dir
-            //si es fichero no permitir escritura
+            //Create entry in the directory refered by *p_inodo_dir
+            //If it's a file, don't allow writing
             if(inode.tipo == 'f') 
             {
                 return ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO;
@@ -170,7 +170,7 @@ int buscar_entrada(
                 );
 #endif
             }
-            //escribir entrada en el directorio padre
+            //Write entry in the father directory
             if(mi_write_f(
                 *p_inodo_dir,
                 &buffer_lec[entry_inode_number],
@@ -233,6 +233,8 @@ void mostrar_error_buscar_entrada(int error)
         case -8: fprintf(stderr, RED "Error: No es un directorio.\n" RESET); break;
     }
 }
+
+//----------------------------- NIVEL 8 (25/04/2023 - ) -----------------------------
 
 int mi_creat(const char *camino, unsigned char permisos)
 {
