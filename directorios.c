@@ -240,7 +240,9 @@ int mi_creat(const char *camino, unsigned char permisos)
 {
     struct superbloque SB;
     bread(posSB, &SB);
-    mostrar_error_buscar_entrada(buscar_entrada(camino, &SB.posInodoRaiz, 0, 0, 1, permisos));
+    mostrar_error_buscar_entrada(
+        buscar_entrada(camino, &SB.posInodoRaiz, 0, 0, 1, permisos)
+    );
 
     return EXITO;
 }
