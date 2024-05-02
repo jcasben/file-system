@@ -252,20 +252,47 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     struct superbloque SB;
     bread(posSB, &SB);
 
-    unsigned int p_inode_dir;
+    unsigned int p_inode_dir = 0;
     unsigned int n_inode = 0;
     unsigned int p_entry = 0;
-    buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6);
+    mostrar_error_buscar_entrada(
+        buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6)
+    );
+
     // Read inode with the assigned value of the function buscar_entrada()
     struct inodo inode;
     leer_inodo(n_inode, &inode);
+    int cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada);
+    printf("Total: %d\n", cant_entries_inode);
+
+    if (cant_entries_inode > 0)
+    {
+        int nbloc = 0;
+        int entry_inode_number = 0;
+
+        while(entry_inode_number < cant_entries_inode)
+        {
+            entry_inode_number = 0;
+            struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
+            mi_read_f(n_inode, buffer_lec, nbloc * (BLOCKSIZE / sizeof(struct entrada)), BLOCKSIZE);
+            for (size_t j = 0; j < cant_entries_inode; j++)
+            {
+                if (flag == 'l')
+                {
+
+                }
+                entry_inode_number++;
+            }
+            nbloc++;
+        }
+    }
 
     char header[] = "TYPE\t\tPERMISSIONS\t\tmTIME\t\tNAME"
         "\n-----------------------------------------------------\n";
     
     if (inode.tipo == 'd')
     {
-        
+
     }
 
     return EXITO;
