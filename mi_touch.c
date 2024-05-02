@@ -30,11 +30,17 @@ int main(int argc, char **args)
         fprintf(
             stderr,
             RED
-            "Unable to create file with specified path (path can not end in '/'). For this use /mi_mkdir\n"
+            "Unable to create file with specified path (path can not end with '/'). Try to use ./mi_mkdir instead\n"
             RESET
         );
         return FALLO;
     }
 
+    if (bmount(args[1]) < 0) return FALLO;
 
+    mi_creat(args[3], permisos);
+
+    if (bumount(args[1]) < 0) return FALLO;
+
+    return EXITO;
 }
