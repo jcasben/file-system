@@ -7,9 +7,9 @@
 #define ERROR_PERMISO_ESCRITURA (-6)
 #define ERROR_ENTRADA_YA_EXISTENTE (-7)
 #define ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO (-8)
+
 #define TAMFILA 100
 #define TAMBUFFER (TAMFILA * 1000)
-
 #define TAMNOMBRE 60 //tamaño del nombre de directorio o fichero, en Ext2 = 256
 #define PROFUNDIDAD 32 //profundidad máxima del árbol de directorios
 
@@ -29,6 +29,8 @@ int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsign
 void mostrar_error_buscar_entrada(int error);
 int mi_creat(const char *camino, unsigned char permisos);
 int mi_dir(const char *camino, char *buffer, char tipo, char flag);
+int build_buffer(struct entrada entry, char *buffer);
+int build_extended_buffer(struct entrada, char *buffer);
 int mi_chmod(const char *camino, unsigned char permisos);
 int mi_stat(const char *camino, struct STAT *p_stat);
 void mostrar_buscar_entrada(char *camino, char reservar);
