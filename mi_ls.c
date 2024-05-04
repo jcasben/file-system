@@ -45,4 +45,11 @@ int main(int argc, char **args)
         if (args[2][strlen(args[2]) - 1] != '/') type = 'f';
         else type = 'd';
     }
+
+    if (bmount(disco) < 0) return FALLO;
+
+    mi_dir(path, buffer, type, flag);
+    printf("%s\n", buffer);
+
+    if (bumount()) return FALLO;
 }
