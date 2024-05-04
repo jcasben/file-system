@@ -2,12 +2,12 @@
 
 int main(int argc, char **args)
 {
-    if (argc < 3)
+    if (argc < 3 || argc > 4)
     {
         fprintf(
             stderr,
             RED
-            "Syntax error: ./mi_ls <disco> </ruta>\n"
+            "Syntax error: ./mi_ls <disco> </ruta>. Try ./mi_ls -l <disco> </ruta> to get an extended information\n"
             RESET
         );
         return FALLO;
@@ -22,6 +22,7 @@ int main(int argc, char **args)
             RESET,
             args[1]
         );
+        return FALLO;
     }
 
     char type = ' ';
