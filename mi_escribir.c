@@ -28,7 +28,7 @@ int main(int argc, char **args)
     unsigned int offset = (unsigned int) atoi(args[4]);
     unsigned int nbytes = (unsigned int) strlen(args[3]);
 
-    printf("longitud texto: %ld", nbytes);
+    printf("longitud texto: %d", nbytes);
     char buffer[nbytes];
     strcpy(buffer, args[3]);
 
