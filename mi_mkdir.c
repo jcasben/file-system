@@ -18,7 +18,7 @@ int main(int argc, char **args)
         fprintf(
             stderr,
             RED
-            "Unable to create directory with specified path (path has to end with '/'). Try to use ./mi_touch instead\n"
+            "ERROR: path has to end with '/'. Try to use ./mi_touch instead\n"
             RESET
         );
         return FALLO;
