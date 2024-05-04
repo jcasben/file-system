@@ -24,17 +24,24 @@ int main(int argc, char **args)
         );
     }
 
-    char type;
-    if (args[3][strlen(args[3]) - 1] != '/')
-
+    char type = ' ';
+    char flag = ' ';
     char buffer[TAMBUFFER];
-    if (argc == 3)
-    {
+    char *path;
+    char *disco;
 
-        //mi_dir(args[2], buffer, , ' ');
-    } 
-    else if (argc == 4 && strcmp(args[1], "-l"))
+    if (argc == 4)
     {
-        //mi_dir(args[2], buffer, '', 'l');
+        path = args[3];
+        disco = args[2];
+        flag = 'l';
+        if (args[3][strlen(args[3]) - 1] != '/') type = 'f';
+        else type = 'd';
+    } else if (argc == 3)
+    {
+        path = args[2];
+        disco = args[1];
+        if (args[2][strlen(args[2]) - 1] != '/') type = 'f';
+        else type = 'd';
     }
 }
