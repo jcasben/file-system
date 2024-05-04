@@ -266,23 +266,21 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     // Read inode with the assigned value of the function buscar_entrada()
     struct inodo inode;
     leer_inodo(n_inode, &inode);
-    int cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada);
-    if (cant_entries_inode == 0) return EXITO;
+    unsigned long cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada);
     if (inode.tipo != tipo)
     {
         fprintf(stderr, RED "ERROR: the type of the file doesn't correspond with the path\n" RESET);
         return FALLO;
     }
 
-    if (flag == 'l')
-    {
-        printf("Total: %d\n", cant_entries_inode);
-        printf("\nTYPE\tPERMISSIONS\tmTIME\t\tSIZE\t\tNAME\n"
-               "-------------------------------------------------------------\n");
-    }
-
     if (cant_entries_inode > 0)
     {
+        if (flag == 'l')
+        {
+            printf("Total: %lu\n", cant_entries_inode);
+            printf("\nTYPE\tPERMISSIONS\tmTIME\t\t\tSIZE\tNAME\n"
+                   "---------------------------------------------------------------------\n");
+        }
         int nbloc = 0;
         int entry_inode_number = 0;
 
