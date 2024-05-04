@@ -1,6 +1,7 @@
 #include "directorios.h"
 
 #define DEBUGN7 1
+static struct UltimaEntrada UltimaEntradaEscritura;
 
 //----------------------------- NIVEL 7 (11/04/2023 - 01/05/2024) -----------------------------
 
