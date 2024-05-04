@@ -16,24 +16,24 @@ int main(int argc, char **args)
     char ctime[80];
     if(mi_stat(args[2], &p_stat) < 0) return FALLO;
 
-    printf("Nº de inodo: %d\n", p_inodo);
-    printf("tipo: %c\n", p_stat->tipo);
-    printf("permisos: %d\n", p_stat->permisos);
+//    printf("Nº de inodo: %d\n", p_stat.);
+    printf("tipo: %c\n", p_stat.tipo);
+    printf("permisos: %d\n", p_stat.permisos);
 
-    ts = localtime(&p_stat->atime);
+    ts = localtime(&p_stat.atime);
     strftime(atime, sizeof(atime), "%a %Y-%m-%d %H:%M:%S", ts);
-    ts = localtime(&p_stat->mtime);
+    ts = localtime(&p_stat.mtime);
     strftime(mtime, sizeof(mtime), "%a %Y-%m-%d %H:%M:%S", ts);
-    ts = localtime(&p_stat);
+    ts = localtime(&p_stat.ctime);
     strftime(ctime, sizeof(ctime), "%a %Y-%m-%d %H:%M:%S", ts);
     printf("atime: %s\n", atime);
     printf("ctime: %s\n", ctime);
     printf("mtime: %s\n", mtime);
 
-    printf("nlinks: %d\n", p_stat->nlinks);
-    printf("tamEnBytesLog: %d\n", p_stat->tamEnBytesLog);
-    printf("numBloquesOcupados: %d\n", p_stat->numBloquesOcupados);
+    printf("nlinks: %d\n", p_stat.nlinks);
+    printf("tamEnBytesLog: %d\n", p_stat.tamEnBytesLog);
+    printf("numBloquesOcupados: %d\n", p_stat.numBloquesOcupados);
     
 
-    if (bumount(args[1]) < 0) return FALLO;
+    if (bumount() < 0) return FALLO;
 }
