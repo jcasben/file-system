@@ -314,9 +314,11 @@ int build_buffer(struct entrada entry, char *buffer)
     if (inode.tipo == 'd') sprintf(tmp, BLUE "%s\t" RESET, entry.nombre);
     else sprintf(tmp, "%s\t", entry.nombre);
 
+    // Check if we have to create a new line
     size_t num_rows = strlen(buffer) / TAMFILA;
     aux = buffer + (num_rows * TAMFILA);
     if (strlen(aux + strlen(tmp)) >= TAMFILA + 20) strcat(buffer, "\n");
+
     strcat(buffer, tmp);
 
     return EXITO;
@@ -326,7 +328,36 @@ int build_extended_buffer(struct entrada entry, char *buffer)
 {
     struct inodo inode;
     leer_inodo(entry.ninodo, &inode);
+    char type[2];
+    strcpy(type, (char[2]) { (char) inode.tipo, '\0' });
 
+    // Entry type
+    strcat(buffer, type);
+    strcat(buffer, "\t");
+    // Entry permissions
+    if (inode.permisos & 4) strcat(buffer, "r"); else strcat(buffer, "-");
+    if (inode.permisos & 2) strcat(buffer, "w"); else strcat(buffer, "-");
+    if (inode.permisos & 1) strcat(buffer, "x"); else strcat(buffer, "-");
+    strcat(buffer, "\t");
+    strcat(buffer, "\t");
+    // Entry mTIME
+    char tmp[20];
+    struct tm *tm; //ver info: struct tm
+    tm = localtime(&inode.mtime);
+    sprintf(tmp, "%d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min,  tm->tm_sec);
+    strcat(buffer, tmp);
+    strcat(buffer, "\t");
+    // Entry size
+    char tmp2[20];
+    sprintf(tmp2, "%u", inode.tamEnBytesLog);
+    strcat(buffer, tmp2);
+    strcat(buffer, "\t");
+    // Entry name
+    char name[80];
+    if (inode.tipo == 'd') sprintf(name, BLUE "%s" RESET, entry.nombre);
+    else sprintf(name, "%s", entry.nombre);
+    strcat(buffer, name);
+    strcat(buffer, "\n");
 
     return EXITO;
 }
