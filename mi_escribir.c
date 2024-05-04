@@ -9,8 +9,6 @@
 
 int main(int argc, char **args)
 {
-    int n_inode;
-    int b_writed;
 
     if (argc < 5)
     {
