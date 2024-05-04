@@ -219,7 +219,7 @@ int buscar_entrada(
     return buscar_entrada(end, p_inodo_dir, p_inodo, p_entrada, reservar, permisos);
 }
 
-/// Prints the corresponding error guiven its number
+/// Prints the corresponding error given its number
 /// \param error number of the error.
 void mostrar_error_buscar_entrada(int error)
 {
