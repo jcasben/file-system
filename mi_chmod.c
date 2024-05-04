@@ -22,5 +22,5 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-    if (bumount(args[1]) < 0) return FALLO;
+    if (bumount() < 0) return FALLO;
 }

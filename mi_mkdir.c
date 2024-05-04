@@ -35,7 +35,7 @@ int main(int argc, char **args)
 
     mi_creat(args[3], permisos);
 
-    if (bumount(args[1]) < 0) return FALLO;
+    if (bumount() < 0) return FALLO;
 
     return EXITO;
 }
