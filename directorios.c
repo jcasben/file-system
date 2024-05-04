@@ -300,3 +300,112 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
 
     return EXITO;
 }
+
+int build_buffer(struct entrada entry, char *buffer)
+{
+    struct inodo inode;
+    leer_inodo(entry.ninodo, &inode);
+    char tmp[sizeof(entry.nombre) + 20];
+    char *aux;
+
+    if (inode.tipo == 'd') sprintf(tmp, BLUE "%s\t" RESET, entry.nombre);
+    else sprintf(tmp, "%s\t", entry.nombre);
+
+    size_t num_rows = strlen(buffer) / TAMFILA;
+    aux = buffer + (num_rows * TAMFILA);
+    if (strlen(aux + strlen(tmp)) >= TAMFILA + 20) strcat(buffer, "\n");
+    strcat(buffer, tmp);
+
+    return EXITO;
+}
+
+int build_extended_buffer(struct entrada entry, char *buffer)
+{
+    struct inodo inode;
+    leer_inodo(entry.ninodo, &inode);
+
+
+    return EXITO;
+}
+
+/// Modify the permissions of a file
+/// \param camino the path of the file
+/// \param permisos the new permissions of the file
+/// \return EXITO if the permissions were modified successfully, FALLO otherwise
+int mi_chmod(const char *camino, unsigned char permisos)
+{
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+    if (error < 0) {
+        mostrar_error_buscar_entrada(error);
+        return FALLO;
+    }
+    return mi_chmod_f(p_inodo, permisos);
+}
+
+/// Gets the stats of a file
+/// \param camino the path of the file
+/// \param p_stat pointer to the struct where the stats will be stored
+/// \return EXITO if the stats were obtained successfully, FALLO otherwise
+int mi_stat(const char *camino, struct STAT *p_stat)
+{
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+    if (error < 0) {
+        mostrar_error_buscar_entrada(error);
+        return FALLO;
+    }
+    printf("Nº de inodo: %d", p_inodo);
+    return mi_stat_f(p_inodo, p_stat);
+}
+
+//----------------------------- NIVEL 9 (02/05/2023 - ) -----------------------------
+
+/// Writes the content of a buffer in the given file
+/// \param camino file's path
+/// \param buf data to write
+/// \param offset offset for written data
+/// \param nbytes number of bytes to write
+/// \return number of written bytes
+int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes)
+{
+
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+    if (error  < 0) {
+        mostrar_error_buscar_entrada(error);
+    }
+
+    int written_bytes = mi_write_f(p_inodo, buf, offset, nbytes);
+
+
+    return written_bytes;
+}
+
+/// Reads the content of a file and stores it in a buffer
+/// \param camino file's path
+/// \param buf storing for the read data
+/// \param offset offset for read data
+/// \param nbytes number of bytes to read
+/// \return number of read bytes
+int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes)
+{
+    unsigned int p_inodo_dir = 0;
+    unsigned int p_inodo = 0;
+    unsigned int p_entrada = 0;
+    int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+    if (error  < 0) {
+        mostrar_error_buscar_entrada(error);
+    }
+
+    int read_bytes = mi_read_f(p_inodo, buf, offset, nbytes);
+
+
+    return read_bytes;
+}
