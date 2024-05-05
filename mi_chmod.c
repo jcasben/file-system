@@ -18,7 +18,7 @@ int main(int argc, char **args)
     
     if (mi_chmod(args[3], permisos) < 0) 
     {
-        fprintf(stderr, "Error: No se ha podido cambiar los permisos\n");
+        fprintf(stderr, RED "ERROR: No se ha podido cambiar los permisos\n" RESET);
         return FALLO;
     }
 
