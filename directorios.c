@@ -1,6 +1,6 @@
 #include "directorios.h"
 
-#define DEBUGN7 0
+#define DEBUGN7 1
 static struct UltimaEntrada UltimaEntradaEscritura;
 
 //----------------------------- NIVEL 7 (11/04/2023 - 01/05/2024) -----------------------------
@@ -83,7 +83,7 @@ int buscar_entrada(
         {
             entry_inode_number = 0;
             memset(buffer_lec, 0, BLOCKSIZE);
-            mi_read_f(*p_inodo_dir, buffer_lec, nbloc * (BLOCKSIZE / sizeof(struct entrada)), BLOCKSIZE);
+            mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
             for (size_t j = 0; j < cant_entries_inode; j++)
             {
                 //Increment the number of revisde entries
@@ -241,9 +241,13 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     unsigned int p_inode_dir = 0;
     unsigned int n_inode = 0;
     unsigned int p_entry = 0;
-    mostrar_error_buscar_entrada(
-        buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6)
-    );
+    int error = buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6);
+    if (error < 0)
+    {
+        mostrar_error_buscar_entrada(error);
+        return error;
+    }
+
 
     // Read inode with the assigned value of the function buscar_entrada()
     struct inodo inode;
@@ -268,9 +272,8 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
 
         while(entry_inode_number < cant_entries_inode)
         {
-            entry_inode_number = 0;
             struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
-            mi_read_f(n_inode, buffer_lec, nbloc * (BLOCKSIZE / sizeof(struct entrada)), BLOCKSIZE);
+            mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
             for (size_t j = 0; j < cant_entries_inode; j++)
             {
                 if (flag == 'l') build_extended_buffer(buffer_lec[j], buffer);
@@ -281,12 +284,13 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         }
     } else if (tipo == 'f')
     {
-        unsigned long entry_inode_number;
+        unsigned int entry_inode_number;
         p_inode_dir = 0;
         n_inode = 0;
         p_entry = 0;
         char *name = strrchr(camino, '/') + 1;
         char mod_path[strlen(camino)];
+        memset(mod_path, 0, strlen(camino));
         strncpy(mod_path, camino, strlen(camino) - strlen(name));
 
         mostrar_error_buscar_entrada(
@@ -305,7 +309,7 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         {
             memset(buffer_lec, 0, BLOCKSIZE);
             entry_inode_number = 0;
-            mi_read_f(n_inode, buffer_lec, nbloc * (BLOCKSIZE / sizeof(struct entrada)), BLOCKSIZE);
+            mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
             for (size_t j = 0; j < cant_entries_inode; j++)
             {
                 if (strcmp(buffer_lec[j].nombre, name) == 0)
