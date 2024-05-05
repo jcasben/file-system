@@ -4,7 +4,7 @@ int main(int argc, char **args)
 {
     if(argc != 3)
     {
-        fprintf(stderr, "Sintaxis: ./mi_stat <disco> </ruta>\n");
+        fprintf(stderr, RED "Syntax error: ./mi_stat <disco> </ruta>\n" RESET);
         return FALLO;
     }
 
