@@ -9,6 +9,7 @@ int main(int argc, char **args)
     }
 
     if (bmount(args[1]) < 0) return FALLO;
+
     struct STAT p_stat;
     struct tm *ts;
     char atime[80];
@@ -33,7 +34,6 @@ int main(int argc, char **args)
     printf("nlinks: %d\n", p_stat.nlinks);
     printf("tamEnBytesLog: %d\n", p_stat.tamEnBytesLog);
     printf("numBloquesOcupados: %d\n", p_stat.numBloquesOcupados);
-    
 
     if (bumount() < 0) return FALLO;
 }
