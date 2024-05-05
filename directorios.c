@@ -1,18 +1,10 @@
 #include "directorios.h"
 
-#define DEBUGN7 1
+#define DEBUGN7 0
 static struct UltimaEntrada UltimaEntradaEscritura;
 
 //----------------------------- NIVEL 7 (11/04/2023 - 01/05/2024) -----------------------------
 
-/// Given a string that starts with '/', divides its content in two parts:
-/// * inicial: content inside the first two '/' (directory name) | if there's not a second '/' (file name);
-/// * final: the rest of the content of the string.
-/// \param camino string that contains the path
-/// \param inicial first part of the path
-/// \param final second part of the path
-/// \param tipo 'd' if the path refers to a directory; 'f' if the path refers to a file.
-/// \return EXITO if the operation was successfull.
 int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
 {
     //If the path is null or if path doesn't start with '/'
@@ -43,14 +35,6 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo)
     return EXITO;
 }
 
-/// Search an entry in our file system given a path
-/// \param camino_parcial path to the entry
-/// \param p_inodo_dir number of the inode of actual directory
-/// \param p_inodo inode number of the specified entry
-/// \param p_entrada number of entry
-/// \param reservar 0 if we only want to consult; 1 if we want to create a new entry
-/// \param permisos permissions of the new entries
-/// \return the inode number of the desired entry
 int buscar_entrada(
     const char *camino_parcial, unsigned int *p_inodo_dir, unsigned int *p_inodo, 
     unsigned int *p_entrada, char reservar, unsigned char permisos
@@ -219,8 +203,6 @@ int buscar_entrada(
     return buscar_entrada(end, p_inodo_dir, p_inodo, p_entrada, reservar, permisos);
 }
 
-/// Prints the corresponding error given its number
-/// \param error number of the error.
 void mostrar_error_buscar_entrada(int error)
 {
     switch (error)
@@ -309,7 +291,7 @@ int build_buffer(struct entrada entry, char *buffer)
     char tmp[sizeof(entry.nombre) + 20];
     char *aux;
 
-    if (inode.tipo == 'd') sprintf(tmp, BLUE "%s\t" RESET, entry.nombre);
+    if (inode.tipo == 'd') sprintf(tmp, NEGRITA BLUE "%s\t" RESET, entry.nombre);
     else sprintf(tmp, "%s\t", entry.nombre);
 
     // Check if we have to create a new line
@@ -352,7 +334,7 @@ int build_extended_buffer(struct entrada entry, char *buffer)
     strcat(buffer, "\t");
     // Entry name
     char name[80];
-    if (inode.tipo == 'd') sprintf(name, BLUE "%s" RESET, entry.nombre);
+    if (inode.tipo == 'd') sprintf(name, NEGRITA BLUE "%s" RESET, entry.nombre);
     else sprintf(name, "%s", entry.nombre);
     strcat(buffer, name);
     strcat(buffer, "\n");
@@ -360,10 +342,6 @@ int build_extended_buffer(struct entrada entry, char *buffer)
     return EXITO;
 }
 
-/// Modify the permissions of a file
-/// \param camino the path of the file
-/// \param permisos the new permissions of the file
-/// \return EXITO if the permissions were modified successfully, FALLO otherwise
 int mi_chmod(const char *camino, unsigned char permisos)
 {
     unsigned int p_inodo_dir = 0;
@@ -377,10 +355,6 @@ int mi_chmod(const char *camino, unsigned char permisos)
     return mi_chmod_f(p_inodo, permisos);
 }
 
-/// Gets the stats of a file
-/// \param camino the path of the file
-/// \param p_stat pointer to the struct where the stats will be stored
-/// \return EXITO if the stats were obtained successfully, FALLO otherwise
 int mi_stat(const char *camino, struct STAT *p_stat)
 {
     unsigned int p_inodo_dir = 0;
@@ -391,18 +365,12 @@ int mi_stat(const char *camino, struct STAT *p_stat)
         mostrar_error_buscar_entrada(error);
         return FALLO;
     }
-    printf("Nº de inodo: %d", p_inodo);
+    printf("Nº de inodo: %d\n", p_inodo);
     return mi_stat_f(p_inodo, p_stat);
 }
 
 //----------------------------- NIVEL 9 (02/05/2023 - ) -----------------------------
 
-/// Writes the content of a buffer in the given file
-/// \param camino file's path
-/// \param buf data to write
-/// \param offset offset for written data
-/// \param nbytes number of bytes to write
-/// \return number of written bytes
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes)
 {
 
@@ -410,9 +378,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
     int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-    if (error  < 0) {
-        mostrar_error_buscar_entrada(error);
-    }
+    if (error  < 0) mostrar_error_buscar_entrada(error);
 
     int written_bytes = mi_write_f(p_inodo, buf, offset, nbytes);
 
@@ -420,12 +386,6 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     return written_bytes;
 }
 
-/// Reads the content of a file and stores it in a buffer
-/// \param camino file's path
-/// \param buf storing for the read data
-/// \param offset offset for read data
-/// \param nbytes number of bytes to read
-/// \return number of read bytes
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes)
 {
     unsigned int p_inodo_dir = 0;
