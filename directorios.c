@@ -217,7 +217,7 @@ void mostrar_error_buscar_entrada(int error)
     }
 }
 
-//----------------------------- NIVEL 8 (25/04/2023 - ) -----------------------------
+//----------------------------- NIVEL 8 (25/04/2023 - 05/05/2024) -----------------------------
 
 int mi_creat(const char *camino, unsigned char permisos)
 {
@@ -254,14 +254,14 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         fprintf(stderr, RED "ERROR: the type of the file doesn't correspond with the path\n" RESET);
         return FALLO;
     }
-
-    if (cant_entries_inode > 0)
+    
+    if (tipo == 'd' && cant_entries_inode > 0)
     {
         if (flag == 'l')
         {
             printf("Total: %lu\n", cant_entries_inode);
             printf("\nTYPE\tPERMISSIONS\tmTIME\t\t\tSIZE\tNAME\n"
-                   "---------------------------------------------------------------------\n");
+                       "---------------------------------------------------------------------\n");
         }
         int nbloc = 0;
         int entry_inode_number = 0;
@@ -275,6 +275,45 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
             {
                 if (flag == 'l') build_extended_buffer(buffer_lec[j], buffer);
                 else build_buffer(buffer_lec[j], buffer);
+                entry_inode_number++;
+            }
+            nbloc++;
+        }
+    } else if (tipo == 'f')
+    {
+        unsigned long entry_inode_number;
+        p_inode_dir = 0;
+        n_inode = 0;
+        p_entry = 0;
+        char *name = strrchr(camino, '/') + 1;
+        char mod_path[strlen(camino)];
+        strncpy(mod_path, camino, strlen(camino) - strlen(name));
+
+        mostrar_error_buscar_entrada(
+                buscar_entrada(mod_path, &p_inode_dir, &n_inode, &p_entry, 0, 6)
+        );
+        leer_inodo(n_inode, &inode);
+        cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada);
+        struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
+
+        if (flag == 'l')
+            printf("\nTYPE\tPERMISSIONS\tmTIME\t\t\tSIZE\tNAME\n"
+                   "---------------------------------------------------------------------\n");
+        entry_inode_number = 0;
+        size_t nbloc = 0;
+        while(entry_inode_number < cant_entries_inode && (strcmp(name, buffer_lec[entry_inode_number].nombre) != 0))
+        {
+            memset(buffer_lec, 0, BLOCKSIZE);
+            entry_inode_number = 0;
+            mi_read_f(n_inode, buffer_lec, nbloc * (BLOCKSIZE / sizeof(struct entrada)), BLOCKSIZE);
+            for (size_t j = 0; j < cant_entries_inode; j++)
+            {
+                if (strcmp(buffer_lec[j].nombre, name) == 0)
+                {
+                    if (flag == 'l') build_extended_buffer(buffer_lec[j], buffer);
+                    else build_buffer(buffer_lec[j], buffer);
+                    break;
+                }
                 entry_inode_number++;
             }
             nbloc++;
