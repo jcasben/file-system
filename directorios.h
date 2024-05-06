@@ -19,16 +19,33 @@
 #define TAMBUFFER (TAMFILA * 1000)
 #define TAMNOMBRE 60 //tamaño del nombre de directorio o fichero, en Ext2 = 256
 #define PROFUNDIDAD 32 //profundidad máxima del árbol de directorios
+#define USARCACHE 2 // Nivel de writeCache -> 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
+#if (USARCACHE==2 || USARCACHE==3)
+    #define CACHE_SIZE 3
+#endif
 
 struct entrada {
     char nombre[TAMNOMBRE];
     unsigned int ninodo;
 };
 
-struct UltimaEntrada{
-  char camino [TAMNOMBRE*PROFUNDIDAD];
-  int p_inodo;
+struct UltimaEntrada
+{
+    char camino [TAMNOMBRE*PROFUNDIDAD];
+    unsigned int p_inodo;
+    #if USARCACHE==3 // tabla LRU
+        struct timeval ultima_consulta;
+    #endif
 };
+
+#if USARCACHE==2
+    struct CacheFIFO
+    {
+        struct UltimaEntrada lastEntries[CACHE_SIZE];
+        int pos;
+    };
+#endif
+
 
 /// Given a string that starts with '/', divides its content in two parts:
 /// * inicial: content inside the first two '/' (directory name) | if there's not a second '/' (file name);
@@ -85,6 +102,10 @@ void mostrar_buscar_entrada(char *camino, char reservar);
 /// \param nbytes number of bytes to write
 /// \return number of written bytes
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes);
+/// Checks if a path is in the writeCache
+/// \param camino path to search
+/// \return index of the path in the writeCache if found, -1 otherwise
+int searchEntry(const char *camino);
 /// Reads the content of a file and stores it in a buffer
 /// \param camino file's path
 /// \param buf storing for the read data

@@ -8,7 +8,18 @@
 #include "directorios.h"
 
 #define DEBUGN7 1
-static struct UltimaEntrada UltimaEntradaEscritura;
+
+
+#if USARCACHE==1
+    static struct UltimaEntrada UltimaEntradaEscritura;
+#endif
+
+#if USARCACHE==2
+    static struct CacheFIFO writeCache;
+    static struct CacheFIFO readCache;
+    static char initWriteCache = 0;
+    static char initReadCache = 0;
+#endif
 
 //----------------------------- NIVEL 7 (11/04/2023 - 01/05/2024) -----------------------------
 
@@ -427,8 +438,45 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
-    int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-    if (error  < 0) mostrar_error_buscar_entrada(error);
+
+
+    #if USARCACHE==0
+        int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+        if (error  < 0) mostrar_error_buscar_entrada(error);
+    #endif
+    #if USARCACHE==1
+        if (strcmp(UltimaEntradaEscritura.camino, camino) == 0)
+        {
+            p_inodo = UltimaEntradaEscritura.p_inodo;
+        } else {
+            fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
+            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+            if (error  < 0) mostrar_error_buscar_entrada(error);
+            strcpy(UltimaEntradaEscritura.camino, camino);
+            UltimaEntradaEscritura.p_inodo = p_inodo;
+        }
+    #endif
+    #if USARCACHE==2
+        if (initWriteCache == 0) {
+            initWriteCache = 1;
+            writeCache.pos = -1;
+        }
+        unsigned int pos;
+        if((pos = searchEntry(camino)) > 0)
+        {
+            p_inodo = writeCache.lastEntries[pos].p_inodo;
+        }
+        else
+        {
+            fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
+            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+            if (error  < 0) mostrar_error_buscar_entrada(error);
+            writeCache.pos++;
+            strcpy(writeCache.lastEntries[writeCache.pos].camino, camino);
+            writeCache.lastEntries[writeCache.pos].p_inodo = p_inodo;
+        }
+    #endif
+
 
     int written_bytes = mi_write_f(p_inodo, buf, offset, nbytes);
 
@@ -436,11 +484,26 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     return written_bytes;
 }
 
+#if USARCACHE==2
+    int searchEntry(const char *camino)
+    {
+        for (int i = 0; i < CACHE_SIZE; ++i) {
+            if(strcmp(writeCache.lastEntries[i].camino, camino) == 0)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+#endif
+
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes)
 {
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
+
     int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
     if (error  < 0) {
         mostrar_error_buscar_entrada(error);
