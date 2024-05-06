@@ -63,7 +63,7 @@ int extraer_camino(const char *camino, char *inicial, char *final, char *tipo);
 /// \param p_entrada number of entry
 /// \param reservar 0 if we only want to consult; 1 if we want to create a new entry
 /// \param permisos permissions of the new entries
-/// \return the inode number of the desired entry
+/// \return EXITO if the entry was found, FALLO error code otherwise
 int buscar_entrada(const char *camino_parcial, unsigned int *p_inodo_dir, unsigned int *p_inodo, unsigned int *p_entrada, char reservar, unsigned char permisos);
 /// Prints the corresponding error given its number
 /// \param error number of the error.
