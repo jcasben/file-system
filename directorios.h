@@ -1,3 +1,10 @@
+/*
+    Autores:
+        - Marc Link Cladera
+        - Carlos Gálvez Mena
+        - Jesús Castillo Benito
+*/
+
 #include "ficheros.h"
 
 #define ERROR_CAMINO_INCORRECTO (-2)
@@ -85,3 +92,12 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 /// \param nbytes number of bytes to read
 /// \return number of read bytes
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes);
+/// Creates a link to the directory entry
+/// \param camino1
+/// \param camino2
+/// \return
+int mi_link(const char *camino1, const char *camino2);
+///
+/// \param camino
+/// \return
+int mi_unlink(const char *camino);
