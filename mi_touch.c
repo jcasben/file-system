@@ -7,7 +7,7 @@
 
 #include "directorios.h"
 
-int main(int argc, char **args)
+int main(int argc, char **argv)
 {
     if (argc < 4)
     {
@@ -20,7 +20,7 @@ int main(int argc, char **args)
         return FALLO;  
     }
 
-    int permisos = atoi(args[2]);
+    int permisos = atoi(argv[2]);
     if (permisos < 0 || permisos > 7)
     {
         fprintf(
@@ -32,7 +32,7 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-    if (args[3][strlen(args[3]) - 1] == '/')
+    if (argv[3][strlen(argv[3]) - 1] == '/')
     {
         fprintf(
             stderr,
@@ -43,9 +43,9 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-    if (bmount(args[1]) < 0) return FALLO;
+    if (bmount(argv[1]) < 0) return FALLO;
 
-    mi_creat(args[3], permisos);
+    mi_creat(argv[3], permisos);
 
     if (bumount() < 0) return FALLO;
 
