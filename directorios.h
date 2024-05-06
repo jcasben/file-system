@@ -24,7 +24,8 @@
     #define CACHE_SIZE 3
 #endif
 
-struct entrada {
+struct entrada
+{
     char nombre[TAMNOMBRE];
     unsigned int ninodo;
 };
@@ -73,7 +74,19 @@ void mostrar_error_buscar_entrada(int error);
 /// \param permisos permissions
 /// \return EXITO
 int mi_creat(const char *camino, unsigned char permisos);
+///
+/// \param camino
+/// \param buffer
+/// \param tipo
+/// \param flag
+/// \return
 int mi_dir(const char *camino, char *buffer, char tipo, char flag);
+///
+/// \param path
+/// \param prev_path
+/// \param file_name
+/// \return
+char* extract_file_path(const char *path, char *prev_path);
 /// Writes the normal version of an entry onto a buffer
 /// \param entry entry to be written
 /// \param buffer destination buffer
@@ -113,12 +126,12 @@ int searchEntry(const char *camino);
 /// \param nbytes number of bytes to read
 /// \return number of read bytes
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes);
-/// Creates a link to the directory entry
-/// \param camino1
-/// \param camino2
-/// \return
+/// Creates a link to the directory entry of the given path
+/// \param camino1 path to the entry to be linked
+/// \param camino2 path of the new link
+/// \return EXITO
 int mi_link(const char *camino1, const char *camino2);
-///
-/// \param camino
-/// \return
+/// Deletes the entry of the specified path
+/// \param camino entry to be deleted
+/// \return EXITO
 int mi_unlink(const char *camino);

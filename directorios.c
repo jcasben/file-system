@@ -129,7 +129,7 @@ int buscar_entrada(
             
             //Create entry in the directory refered by *p_inodo_dir
             //If it's a file, don't allow writing
-            if(inode.tipo == 'f') 
+            if(inode.tipo == 'f')
             {
                 return ERROR_NO_SE_PUEDE_CREAR_ENTRADA_EN_UN_FICHERO;
             }
@@ -306,10 +306,9 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         p_inode_dir = 0;
         n_inode = 0;
         p_entry = 0;
-        char *name = strrchr(camino, '/') + 1;
+
         char mod_path[strlen(camino)];
-        memset(mod_path, 0, strlen(camino));
-        strncpy(mod_path, camino, strlen(camino) - strlen(name));
+        char *name = extract_file_path(camino, mod_path);
 
         mostrar_error_buscar_entrada(
                 buscar_entrada(mod_path, &p_inode_dir, &n_inode, &p_entry, 0, 6)
@@ -343,6 +342,15 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     }
 
     return EXITO;
+}
+
+char* extract_file_path(const char *path, char *prev_path)
+{
+    char *file_name = strrchr(path, '/') + 1;
+    memset(prev_path, 0, strlen(path));
+    strncpy(prev_path, path, strlen(path) - strlen(file_name));
+
+    return file_name;
 }
 
 int build_buffer(struct entrada entry, char *buffer)
@@ -434,7 +442,6 @@ int mi_stat(const char *camino, struct STAT *p_stat)
 
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes)
 {
-
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
