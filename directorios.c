@@ -616,30 +616,11 @@ int mi_unlink(const char *camino)
 
     inode_entry.nlinks = inode_entry.nlinks - 1;
     if (inode_entry.nlinks == 0) liberar_inodo(entry.ninodo);
-    /*unsigned int cant_entries_inode = inode.tamEnBytesLog/sizeof(struct entrada);
-    unsigned int entry_inode_number = 0;
-    struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
-    unsigned int nbloc = 0;
-
-    while(entry_inode_number < cant_entries_inode && (strcmp(name, buffer_lec[entry_inode_number].nombre) != 0))
+    else
     {
-        mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
-        for (size_t j = 0; j < cant_entries_inode; j++)
-        {
-            if(strcmp(buffer_lec[j].nombre, name) == 0)
-            {
-                //if (buffer_lec[j].)
-                buffer_lec[j].ninodo = 0;
-                memset(buffer_lec[j].nombre, 0, TAMNOMBRE);
-                mi_write_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
-                inode.nlinks = inode.nlinks - 1;
-                if (inode.nlinks == 0) liberar_inodo(n_inode);
-                break;
-            }
-            entry_inode_number++;
-        }
-        nbloc++;
-    }*/
+        inode_entry.ctime = time(NULL);
+        escribir_inodo(entry.ninodo, &inode_entry);
+    }
 
     return EXITO;
 }
