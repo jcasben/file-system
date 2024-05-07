@@ -266,7 +266,6 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         return error;
     }
 
-
     // Read inode with the assigned value of the function buscar_entrada()
     struct inodo inode;
     leer_inodo(n_inode, &inode);
@@ -302,55 +301,19 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         }
     } else if (tipo == 'f')
     {
-        unsigned int entry_inode_number;
-        p_inode_dir = 0;
-        n_inode = 0;
-        p_entry = 0;
-
-        char mod_path[strlen(camino)];
-        char *name = extract_file_path(camino, mod_path);
-
-        mostrar_error_buscar_entrada(
-                buscar_entrada(mod_path, &p_inode_dir, &n_inode, &p_entry, 0, 6)
-        );
-        leer_inodo(n_inode, &inode);
-        cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada);
-        struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
+        struct entrada entry;
+        mi_read_f(p_inode_dir, &entry, p_entry * sizeof(struct entrada), sizeof(struct entrada));
 
         if (flag == 'l')
+        {
             printf("\nTYPE\tPERMISSIONS\tmTIME\t\t\tSIZE\tNAME\n"
                    "---------------------------------------------------------------------\n");
-        entry_inode_number = 0;
-        size_t nbloc = 0;
-        while(entry_inode_number < cant_entries_inode && (strcmp(name, buffer_lec[entry_inode_number].nombre) != 0))
-        {
-            memset(buffer_lec, 0, BLOCKSIZE);
-            entry_inode_number = 0;
-            mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
-            for (size_t j = 0; j < cant_entries_inode; j++)
-            {
-                if (strcmp(buffer_lec[j].nombre, name) == 0)
-                {
-                    if (flag == 'l') build_extended_buffer(buffer_lec[j], buffer);
-                    else build_buffer(buffer_lec[j], buffer);
-                    break;
-                }
-                entry_inode_number++;
-            }
-            nbloc++;
+            build_extended_buffer(entry, buffer);
         }
+        else build_buffer(entry, buffer);
     }
 
     return EXITO;
-}
-
-char* extract_file_path(const char *path, char *prev_path)
-{
-    char *file_name = strrchr(path, '/') + 1;
-    memset(prev_path, 0, strlen(path));
-    strncpy(prev_path, path, strlen(path) - strlen(file_name));
-
-    return file_name;
 }
 
 int build_buffer(struct entrada entry, char *buffer)
@@ -556,13 +519,19 @@ int mi_link(const char *camino1, const char *camino2)
         return FALLO;
     }
 
-    // Obtain the path of the directory that contains the entry
-    char file_path[strlen(camino2)];
-    char *name = extract_file_path(camino2, file_path);
+    struct entrada entry;
+    mi_read_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada));
 
+    unsigned int inode_to_delete = entry.ninodo;
+    entry.ninodo = n_inode1;
+    mi_write_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada));
+    liberar_inodo(inode_to_delete);
+    inode1.nlinks = inode1.nlinks + 1;
+    inode1.ctime = time(NULL);
+    escribir_inodo(n_inode1, &inode1);
+    /*
     unsigned int ninode_to_delete;
     struct inodo inode_path_dir2;
-
     // Search for the entry of the link
     unsigned int n_inode3 = 0;
     unsigned p_inode_dir3 = 0;
@@ -602,7 +571,7 @@ int mi_link(const char *camino1, const char *camino2)
             entry_inode_number++;
         }
         nbloc++;
-    }
+    }*/
 
     return EXITO;
 }
@@ -614,18 +583,40 @@ int mi_unlink(const char *camino)
     unsigned int n_inode = 0;
     unsigned int p_entry = 0;
 
-    char mod_path[strlen(camino)];
-    char *name = extract_file_path(camino, mod_path);
-    int error = buscar_entrada(mod_path, &p_inode_dir, &n_inode, &p_entry, 0, 6);
+    int error = buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6);
     if (error < 0)
     {
         mostrar_error_buscar_entrada(error);
         return FALLO;
     }
 
-    if (leer_inodo(n_inode, &inode) == FALLO) return FALLO;
+    struct entrada entry;
+    mi_read_f(p_inode_dir, &entry, p_entry * sizeof(struct entrada), sizeof(struct entrada));
 
-    unsigned int cant_entries_inode = inode.tamEnBytesLog/sizeof(struct entrada);
+    struct inodo inode_entry;
+    leer_inodo(entry.ninodo, &inode_entry);
+    if (inode_entry.tipo == 'd' && inode_entry.tamEnBytesLog > 0)
+    {
+        fprintf(stderr, RED "ERROR: can not delete not empty directory" RESET);
+        return FALLO;
+    }
+
+    struct inodo inode_dir;
+    leer_inodo(p_inode_dir, &inode_dir);
+    unsigned int cant_entries_dir = inode_dir.tamEnBytesLog / sizeof(struct entrada);
+    if (p_entry == cant_entries_dir - 1)
+        mi_truncar_f(p_inode_dir, inode_dir.tamEnBytesLog - sizeof(struct entrada));
+    else
+    {
+        struct entrada last_entry;
+        mi_read_f(p_inode_dir, &last_entry, (cant_entries_dir - 1) * sizeof(struct entrada), sizeof(struct entrada));
+        mi_write_f(p_inode_dir, &last_entry, p_entry * sizeof(struct entrada), sizeof(struct entrada));
+        mi_truncar_f(p_inode_dir, inode_dir.tamEnBytesLog - sizeof(struct entrada));
+    }
+
+    inode_entry.nlinks = inode_entry.nlinks - 1;
+    if (inode_entry.nlinks == 0) liberar_inodo(entry.ninodo);
+    /*unsigned int cant_entries_inode = inode.tamEnBytesLog/sizeof(struct entrada);
     unsigned int entry_inode_number = 0;
     struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
     unsigned int nbloc = 0;
@@ -637,16 +628,18 @@ int mi_unlink(const char *camino)
         {
             if(strcmp(buffer_lec[j].nombre, name) == 0)
             {
+                //if (buffer_lec[j].)
                 buffer_lec[j].ninodo = 0;
                 memset(buffer_lec[j].nombre, 0, TAMNOMBRE);
                 mi_write_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
                 inode.nlinks = inode.nlinks - 1;
+                if (inode.nlinks == 0) liberar_inodo(n_inode);
                 break;
             }
             entry_inode_number++;
         }
         nbloc++;
-    }
+    }*/
 
     return EXITO;
 }
