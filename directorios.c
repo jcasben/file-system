@@ -624,3 +624,26 @@ int mi_unlink(const char *camino)
 
     return EXITO;
 }
+
+int is_directory(const char *camino)
+{
+    unsigned int p_inode_dir = 0;
+    unsigned int n_inode = 0;
+    unsigned int p_entry = 0;
+    int error = buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6);
+    if (error < 0)
+    {
+        mostrar_error_buscar_entrada(error);
+        return FALLO;
+    }
+    struct inodo inode;
+    leer_inodo(n_inode, &inode);
+
+    if (inode.tipo != 'd')
+    {
+        fprintf(stderr, RED "ERROR: the specified path doesn't refer to a directory\n" RESET);
+        return FALLO;
+    }
+
+    return EXITO;
+}
