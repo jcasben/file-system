@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <fcntl.h>
+#include "directorios.h"
 
 #define TAMDISKNAME 128
 #define RESET "\033[0m"
