@@ -19,7 +19,7 @@
 #define TAMBUFFER (TAMFILA * 1000)
 #define TAMNOMBRE 60 //tamaño del nombre de directorio o fichero, en Ext2 = 256
 #define PROFUNDIDAD 32 //profundidad máxima del árbol de directorios
-#define USARCACHE 2 // Nivel de writeCache -> 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
+#define USARCACHE 0 // Nivel de cache -> 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
 #if (USARCACHE==2 || USARCACHE==3)
     #define CACHE_SIZE 3
 #endif
@@ -33,7 +33,10 @@ struct entrada
 struct UltimaEntrada
 {
     char camino [TAMNOMBRE*PROFUNDIDAD];
-    unsigned int p_inodo;
+    unsigned int p_inodo; 
+    #if USARCACHE==2 // tabla FIFO (segunda oportunidad)
+        int a;
+    #endif
     #if USARCACHE==3 // tabla LRU
         struct timeval ultima_consulta;
     #endif
@@ -43,7 +46,8 @@ struct UltimaEntrada
     struct CacheFIFO
     {
         struct UltimaEntrada lastEntries[CACHE_SIZE];
-        int pos;
+        int last;
+        int size;
     };
 #endif
 
@@ -81,12 +85,6 @@ int mi_creat(const char *camino, unsigned char permisos);
 /// \param flag
 /// \return
 int mi_dir(const char *camino, char *buffer, char tipo, char flag);
-///
-/// \param path
-/// \param prev_path
-/// \param file_name
-/// \return
-char* extract_file_path(const char *path, char *prev_path);
 /// Writes the normal version of an entry onto a buffer
 /// \param entry entry to be written
 /// \param buffer destination buffer
@@ -118,7 +116,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 /// Checks if a path is in the writeCache
 /// \param camino path to search
 /// \return index of the path in the writeCache if found, -1 otherwise
-int searchEntry(const char *camino);
+int searchEntry(const char *camino, const struct CacheFIFO *cache);
 /// Reads the content of a file and stores it in a buffer
 /// \param camino file's path
 /// \param buf storing for the read data
@@ -135,3 +133,4 @@ int mi_link(const char *camino1, const char *camino2);
 /// \param camino entry to be deleted
 /// \return EXITO
 int mi_unlink(const char *camino);
+int is_directory(const char *camino);
