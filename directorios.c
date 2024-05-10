@@ -441,10 +441,11 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     #if USARCACHE==2
         if (initWriteCache == 0) {
             initWriteCache = 1;
-            writeCache.pos = -1;
+            writeCache.last = -1;
+            writeCache.size = 0;
         }
         unsigned int pos;
-        if((pos = searchEntry(camino)) > 0)
+        if((pos = searchEntry(camino, &writeCache)) >= 0)
         {
             p_inodo = writeCache.lastEntries[pos].p_inodo;
         }
@@ -458,27 +459,14 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             writeCache.lastEntries[writeCache.pos].p_inodo = p_inodo;
         }
     #endif
-
+    #if USARCACHE==3
+    #endif
 
     int written_bytes = mi_write_f(p_inodo, buf, offset, nbytes);
-
 
     return written_bytes;
 }
 
-#if USARCACHE==2
-    int searchEntry(const char *camino)
-    {
-        for (int i = 0; i < CACHE_SIZE; ++i) {
-            if(strcmp(writeCache.lastEntries[i].camino, camino) == 0)
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-#endif
 
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes)
 {
@@ -493,10 +481,22 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 
     int read_bytes = mi_read_f(p_inodo, buf, offset, nbytes);
 
-
     return read_bytes;
 }
 
+#if USARCACHE==2
+    int searchEntry(const char *camino, const struct CacheFIFO *cache)
+    {
+        for (int i = 0; i < CACHE_SIZE; ++i) {
+            if(strcmp(cache->lastEntries[i].camino, camino) == 0)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+#endif
 //----------------------------- NIVEL 10 (06/05/2024 - ) -----------------------------
 
 int mi_link(const char *camino1, const char *camino2)
