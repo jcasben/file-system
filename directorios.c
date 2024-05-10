@@ -96,12 +96,12 @@ int buscar_entrada(
     if (cant_entries_inode > 0)
     {
         int nbloc = 0;
-        
-        while((entry_inode_number < cant_entries_inode) && (strcmp(beginning, buffer_lec[entry_inode_number].nombre) != 0))
+        int found = 0;
+        memset(buffer_lec, 0, BLOCKSIZE);
+        mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
+
+        while(entry_inode_number < cant_entries_inode)
         {
-            entry_inode_number = 0;
-            memset(buffer_lec, 0, BLOCKSIZE);
-            mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
             for (size_t j = 0; j < cant_entries_inode; j++)
             {
                 //Increment the number of revisde entries
@@ -109,16 +109,22 @@ int buscar_entrada(
                 //Check if it's the entry that we are searching
                 if (strcmp(buffer_lec[j].nombre, beginning) == 0)
                 {
+                    found = 1;
                     *p_inodo = buffer_lec[j].ninodo;
-                    break;  
+                    break;
                 }
                 entry_inode_number++;
+                if (entry_inode_number == (BLOCKSIZE / sizeof(struct entrada)) ) break;
             }
+            if (found == 1) break;
             nbloc++;
+            memset(buffer_lec, 0, BLOCKSIZE);
+            mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
         }
     }
 
-    if (strcmp(beginning, buffer_lec[entry_inode_number].nombre) != 0 && entry_inode_number == cant_entries_inode)
+    const int index = entry_inode_number % (BLOCKSIZE / sizeof(struct entrada));
+    if (strcmp(beginning, buffer_lec[index].nombre) != 0 && entry_inode_number == cant_entries_inode)
     {
         switch (reservar)
         {
@@ -139,19 +145,19 @@ int buscar_entrada(
                 return ERROR_PERMISO_ESCRITURA;
             }
 
-            strcpy(buffer_lec[entry_inode_number].nombre, beginning);
+            strcpy(buffer_lec[index].nombre, beginning);
             if(type == 'd')
             {
                 if (strcmp(end, "/") == 0)
                 {
-                    buffer_lec[entry_inode_number].ninodo = reservar_inodo('d', permisos);
+                    buffer_lec[index].ninodo = reservar_inodo('d', permisos);
 #if DEBUGN7
                     fprintf(
                             stderr,
                             GRAY
                             "[buscar_entrada() -> reservado inodo %d tipo %c con permisos %d para %s]\n"
                             RESET,
-                            buffer_lec[entry_inode_number].ninodo, type, permisos, beginning
+                            buffer_lec[index].ninodo, type, permisos, beginning
                     );
 #endif
                 }
@@ -162,28 +168,28 @@ int buscar_entrada(
             }
             else
             {
-                buffer_lec[entry_inode_number].ninodo = reservar_inodo('f', permisos);
+                buffer_lec[index].ninodo = reservar_inodo('f', permisos);
 #if DEBUGN7
                 fprintf(
                         stderr,
                         GRAY
                         "[buscar_entrada() -> reservado inodo %d tipo %c con permisos %d para %s]\n"
                         RESET,
-                        buffer_lec[entry_inode_number].ninodo, type, permisos, beginning
+                        buffer_lec[index].ninodo, type, permisos, beginning
                 );
 #endif
             }
             //Write entry in the father directory
             if(mi_write_f(
                 *p_inodo_dir,
-                &buffer_lec[entry_inode_number],
+                &buffer_lec[index],
                 *p_entrada * sizeof(struct entrada),
                 sizeof(struct entrada)
             ) == FALLO)
             {
-                if (buffer_lec[entry_inode_number].ninodo != FALLO)
+                if (buffer_lec[index].ninodo != FALLO)
                 {
-                    liberar_inodo(buffer_lec[entry_inode_number].ninodo);
+                    liberar_inodo(buffer_lec[index].ninodo);
                 }
                 return FALLO;
             }
@@ -193,7 +199,7 @@ int buscar_entrada(
                         GRAY
                         "[buscar_entrada() -> creada entrada: %s, %d]\n"
                         RESET,
-                        buffer_lec[entry_inode_number].nombre, buffer_lec[entry_inode_number].ninodo
+                        buffer_lec[index].nombre, buffer_lec[index].ninodo
                 );
 #endif
 
@@ -209,12 +215,12 @@ int buscar_entrada(
         {
             return ERROR_ENTRADA_YA_EXISTENTE;
         }
-        *p_inodo = buffer_lec[entry_inode_number].ninodo;
+        *p_inodo = buffer_lec[index].ninodo;
         *p_entrada = entry_inode_number;
 
         return EXITO;
     }
-    *p_inodo_dir = buffer_lec[entry_inode_number].ninodo;
+    *p_inodo_dir = buffer_lec[index].ninodo;
     *p_inodo = 0;
     *p_entrada = 0;
 
@@ -280,24 +286,28 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     {
         if (flag == 'l')
         {
-            printf("Total: %lu\n", cant_entries_inode);
             printf("\nTYPE\tPERMISSIONS\tmTIME\t\t\tSIZE\tNAME\n"
                        "---------------------------------------------------------------------\n");
         }
         int nbloc = 0;
         int entry_inode_number = 0;
 
+        struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
+        mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
+
         while(entry_inode_number < cant_entries_inode)
         {
-            struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
-            mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
+
             for (size_t j = 0; j < cant_entries_inode; j++)
             {
                 if (flag == 'l') build_extended_buffer(buffer_lec[j], buffer);
                 else build_buffer(buffer_lec[j], buffer);
                 entry_inode_number++;
+                if (entry_inode_number == BLOCKSIZE / sizeof(struct entrada)) break;
             }
             nbloc++;
+            memset(buffer_lec, 0, BLOCKSIZE);
+            mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
         }
     } else if (tipo == 'f')
     {
