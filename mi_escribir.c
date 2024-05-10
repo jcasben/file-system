@@ -10,7 +10,7 @@
 int main(int argc, char **args)
 {
 
-    if (argc < 5)
+    if (argc != 5)
     {
         fprintf(
             stderr, 
