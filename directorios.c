@@ -541,49 +541,6 @@ int mi_link(const char *camino1, const char *camino2)
     inode1.nlinks = inode1.nlinks + 1;
     inode1.ctime = time(NULL);
     escribir_inodo(n_inode1, &inode1);
-    /*
-    unsigned int ninode_to_delete;
-    struct inodo inode_path_dir2;
-    // Search for the entry of the link
-    unsigned int n_inode3 = 0;
-    unsigned p_inode_dir3 = 0;
-    unsigned p_entry3 = 0;
-    error = buscar_entrada(file_path, &p_inode_dir3, &n_inode3, &p_entry3, 0, 6);
-    if (error < 0)
-    {
-        mostrar_error_buscar_entrada(error);
-        return FALLO;
-    }
-    if (leer_inodo(n_inode3, &inode_path_dir2) == FALLO) return FALLO;
-
-    unsigned int cant_entries_inode = inode_path_dir2.tamEnBytesLog/sizeof(struct entrada);
-    unsigned int entry_inode_number = 0;
-    struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
-    unsigned int nbloc = 0;
-
-    while(entry_inode_number < cant_entries_inode && (strcmp(name, buffer_lec[entry_inode_number].nombre) != 0))
-    {
-        mi_read_f(n_inode3, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
-        for (size_t j = 0; j < cant_entries_inode; j++)
-        {
-            if(strcmp(buffer_lec[j].nombre, name) == 0)
-            {
-                // Link this file to the desired one
-                ninode_to_delete = buffer_lec[j].ninodo;
-                buffer_lec[j].ninodo = n_inode1;
-                // Save changes
-                mi_write_f(n_inode3, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
-                liberar_inodo(ninode_to_delete);
-                // Update linked inode
-                inode1.nlinks = inode1.nlinks + 1;
-                inode1.ctime = time(NULL);
-                escribir_inodo(n_inode1, &inode1);
-                break;
-            }
-            entry_inode_number++;
-        }
-        nbloc++;
-    }*/
 
     return EXITO;
 }
