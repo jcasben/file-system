@@ -12,6 +12,7 @@
 
 #if USARCACHE==1
     static struct UltimaEntrada UltimaEntradaEscritura;
+    static struct UltimaEntrada UltimaEntradaLectura;
 #endif
 
 #if USARCACHE==2
