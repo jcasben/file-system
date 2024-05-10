@@ -10,7 +10,7 @@
 int main(int argc, char **args)
 {
 
-    if (argc < 3)
+    if (argc != 3)
     {
         fprintf(
                 stderr,
@@ -21,7 +21,11 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-
+    if(args[2][strlen(args[2])-1]==('/'))
+    {
+        fprintf(stderr, RED "Error: la ruta no se corresponde a un fichero" RESET);
+        return FALLO;
+    }
 
     // Mount the device.
     if (bmount(args[1]) < 0) return FALLO;
@@ -30,7 +34,13 @@ int main(int argc, char **args)
     char buffer[tamBuffer];
     strcpy(buffer, args[3]);
 
-    printf("Bytes leidos: %d", mi_read(args[2], buffer, offset, nbytes));
+    //STAT stats = le
+
+    int read_bytes = mi_read(args[2], buffer, 0, tamBuffer);
+
+    printf("Bytes leidos: %d", read_bytes);
+    printf("%s\n", buffer);
+    // Deben coincidir 
 
     if (bumount() < 0) return FALLO;
 
