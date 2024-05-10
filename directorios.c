@@ -70,7 +70,7 @@ int buscar_entrada(
         struct superbloque SB;
         if (bread(posSB, &SB) == FALLO) return FALLO;
         *p_inodo = SB.posInodoRaiz;
-        p_entrada = 0;
+        *p_entrada = 0;
 
         return 0;
     }
