@@ -284,6 +284,7 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
     
     if (tipo == 'd' && cant_entries_inode > 0)
     {
+        printf("Total: %lu\n", cant_entries_inode);
         if (flag == 'l')
         {
             printf("\nTYPE\tPERMISSIONS\tmTIME\t\t\tSIZE\tNAME\n"
