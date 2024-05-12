@@ -9,7 +9,6 @@
 
 #define DEBUGN7 1
 
-
 #if USARCACHE==1
     static struct UltimaEntrada UltimaEntradaEscritura;
     static struct UltimaEntrada UltimaEntradaLectura;
@@ -18,6 +17,12 @@
 #if USARCACHE==2
     static struct CacheFIFO writeCache;
     static struct CacheFIFO readCache;
+    static char initWriteCache = 0;
+    static char initReadCache = 0;
+#endif
+#if USARCACHE==3
+    static struct CacheLRU writeCache;
+    static struct CacheLRU readCache;
     static char initWriteCache = 0;
     static char initReadCache = 0;
 #endif
@@ -421,7 +426,6 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
 
-
     #if USARCACHE==0
         int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
         if (error  < 0) mostrar_error_buscar_entrada(error);
@@ -441,7 +445,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     #if USARCACHE==2
         if (initWriteCache == 0) {
             initWriteCache = 1;
-            writeCache.last = -1;
+            writeCache.last = 0;
             writeCache.size = 0;
         }
         unsigned int pos;
@@ -454,12 +458,28 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error  < 0) mostrar_error_buscar_entrada(error);
-            writeCache.pos++;
-            strcpy(writeCache.lastEntries[writeCache.pos].camino, camino);
-            writeCache.lastEntries[writeCache.pos].p_inodo = p_inodo;
+
+            updateCache(&writeCache, camino, &p_inodo);
         }
     #endif
     #if USARCACHE==3
+        if (initWriteCache == 0) {
+            initWriteCache = 1;
+            writeCache.size = 0;
+        }
+        unsigned int pos;
+        if((pos = searchEntry(camino, &writeCache)) >= 0)
+        {
+            p_inodo = writeCache.lastEntries[pos].p_inodo;
+        }
+        else
+        {
+            fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
+            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+            if (error  < 0) mostrar_error_buscar_entrada(error);
+
+            updateCache(&writeCache, camino, &p_inodo);
+        }
     #endif
 
     int written_bytes = mi_write_f(p_inodo, buf, offset, nbytes);
@@ -474,10 +494,61 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
 
-    int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-    if (error  < 0) {
-        mostrar_error_buscar_entrada(error);
-    }
+    #if USARCACHE==0
+        int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+        if (error  < 0) mostrar_error_buscar_entrada(error);
+    #endif
+    #if USARCACHE==1
+        if (strcmp(UltimaEntradaLectura.camino, camino) == 0)
+            {
+                p_inodo = UltimaEntradaLectura.p_inodo;
+            } else {
+                fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
+                int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+                if (error  < 0) mostrar_error_buscar_entrada(error);
+                strcpy(UltimaEntradaLectura.camino, camino);
+                UltimaEntradaLectura.p_inodo = p_inodo;
+            }
+    #endif
+    #if USARCACHE==2
+        if (initReadCache == 0) {
+            initReadCache = 1;
+            readCache.last = 0;
+            readCache.size = 0;
+        }
+        unsigned int pos;
+        if((pos = searchEntry(camino, &readCache)) >= 0)
+        {
+            p_inodo = readCache.lastEntries[pos].p_inodo;
+        }
+        else
+        {
+            fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
+            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+            if (error  < 0) mostrar_error_buscar_entrada(error);
+
+            updateCache(&readCache, camino, &p_inodo);
+        }
+    #endif
+    #if USARCACHE==3
+        if (initReadCache == 0) {
+            initReadCache = 1;
+            readCache.size = 0;
+        }
+        unsigned int pos;
+        if((pos = searchEntry(camino, &readCache)) >= 0)
+        {
+            p_inodo = readCache.lastEntries[pos].p_inodo;
+        }
+        else
+        {
+            fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
+            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+            if (error  < 0) mostrar_error_buscar_entrada(error);
+
+            updateCache(&readCache, camino, &p_inodo);
+        }
+    #endif
 
     int read_bytes = mi_read_f(p_inodo, buf, offset, nbytes);
 
@@ -485,16 +556,99 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 }
 
 #if USARCACHE==2
-    int searchEntry(const char *camino, const struct CacheFIFO *cache)
+    int searchEntry(const char *camino, struct CacheFIFO *cache)
     {
-        for (int i = 0; i < CACHE_SIZE; ++i) {
+        for (int i = 0; i < cache->size; i++) {
             if(strcmp(cache->lastEntries[i].camino, camino) == 0)
             {
+                cache->lastEntries[i].a = 1;
                 return i;
             }
         }
 
         return -1;
+    }
+#endif
+#if USARCACHE==3
+int searchEntry(const char *camino, struct CacheLRU *cache)
+    {
+        for (int i = 0; i < cache->size; i++) {
+            if(strcmp(cache->lastEntries[i].camino, camino) == 0)
+            {
+                mingw_gettimeofday(&cache->lastEntries[i].ultima_consulta, NULL);
+                return i;
+            }
+        }
+        return -1;
+    }
+#endif
+#if USARCACHE==2
+    void updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo)
+    {
+
+        if(cache->size < CACHE_SIZE)
+        {
+            strcpy(cache->lastEntries[cache->size].camino, camino);
+            cache->lastEntries[cache->size].p_inodo = *p_inodo;
+            cache->lastEntries[cache->size].a = 1;
+            cache->size++;
+        }
+        else
+        {
+            if(cache->lastEntries[cache->last % CACHE_SIZE].a == 0)
+            {
+                strcpy(cache->lastEntries[cache->last % CACHE_SIZE].camino, camino);
+                cache->lastEntries[cache->last % CACHE_SIZE].p_inodo = *p_inodo;
+                cache->lastEntries[cache->last % CACHE_SIZE].a = 1;
+                cache->last++;
+            }
+            else
+            {
+                do
+                {
+                    cache->lastEntries[cache->last % CACHE_SIZE].a = 0;
+                    cache->last++;
+                } while(cache->lastEntries[cache->last % CACHE_SIZE].a == 1);
+            }
+        }
+    }
+#endif
+#if USARCACHE==3
+    void updateCache(struct CacheLRU *cache, const char *camino, const unsigned int *p_inodo)
+    {
+        if(cache->size < CACHE_SIZE)
+        {
+            strcpy(cache->lastEntries[cache->size].camino, camino);
+            cache->lastEntries[cache->size].p_inodo = *p_inodo;
+            mingw_gettimeofday(&cache->lastEntries[cache->size].ultima_consulta, NULL);
+            cache->size++;
+        }
+        else
+        {
+            unsigned int posMin = 0;
+            for(int i = 1; i < cache->size; i++)
+            {
+                if(compareTimevals(&cache->lastEntries[i].ultima_consulta, &cache->lastEntries[posMin].ultima_consulta) < 0)
+                {
+                    posMin = i;
+                }
+            }
+            strcpy(cache->lastEntries[posMin].camino, camino);
+            cache->lastEntries[posMin].p_inodo = *p_inodo;
+            mingw_gettimeofday(&cache->lastEntries[posMin].ultima_consulta, NULL);
+        }
+    }
+
+    int compareTimevals(const struct timeval *t1, const struct timeval *t2)
+    {
+        if(t1->tv_sec > t2->tv_sec) return 1;
+        else if(t1->tv_sec < t2->tv_sec) return -1;
+        else
+        {
+            if(t1->tv_usec > t2->tv_usec) return 1;
+            else if(t1->tv_usec < t2->tv_usec) return -1;
+        }
+        return 0;
     }
 #endif
 //----------------------------- NIVEL 10 (06/05/2024 - ) -----------------------------

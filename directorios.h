@@ -35,7 +35,7 @@ struct UltimaEntrada
     char camino [TAMNOMBRE*PROFUNDIDAD];
     unsigned int p_inodo; 
     #if USARCACHE==2 // tabla FIFO (segunda oportunidad)
-        int a;
+        unsigned char a;
     #endif
     #if USARCACHE==3 // tabla LRU
         struct timeval ultima_consulta;
@@ -46,8 +46,15 @@ struct UltimaEntrada
     struct CacheFIFO
     {
         struct UltimaEntrada lastEntries[CACHE_SIZE];
-        int last;
-        int size;
+        unsigned int last;
+        unsigned int size;
+    };
+#endif
+#if USARCACHE==3
+struct CacheLRU
+    {
+        struct UltimaEntrada lastEntries[CACHE_SIZE];
+        unsigned int size;
     };
 #endif
 
@@ -116,7 +123,15 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 /// Checks if a path is in the writeCache
 /// \param camino path to search
 /// \return index of the path in the writeCache if found, -1 otherwise
-int searchEntry(const char *camino, const struct CacheFIFO *cache);
+#if USARCACHE==2
+int searchEntry(const char *camino, struct CacheFIFO *cache);
+void updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo);
+#endif
+#if USARCACHE==3
+int searchEntry(const char *camino, struct CacheLRU *cache);
+void updateCache(struct CacheLRU *cache, const char *camino, const unsigned int *p_inodo);
+int compareTimevals(const struct timeval *t1, const struct timeval *t2);
+#endif
 /// Reads the content of a file and stores it in a buffer
 /// \param camino file's path
 /// \param buf storing for the read data
