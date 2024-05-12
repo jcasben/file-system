@@ -6,6 +6,7 @@
 */
 
 #include "ficheros.h"
+#include <sys/time.h>
 
 #define ERROR_CAMINO_INCORRECTO (-2)
 #define ERROR_PERMISO_LECTURA (-3)
@@ -19,7 +20,7 @@
 #define TAMBUFFER (TAMFILA * 1000)
 #define TAMNOMBRE 60 //tamaño del nombre de directorio o fichero, en Ext2 = 256
 #define PROFUNDIDAD 32 //profundidad máxima del árbol de directorios
-#define USARCACHE 0 // Nivel de cache -> 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
+#define USARCACHE 1 // Nivel de cache -> 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
 #if (USARCACHE==2 || USARCACHE==3)
     #define CACHE_SIZE 3
 #endif

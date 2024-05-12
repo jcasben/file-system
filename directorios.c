@@ -7,7 +7,7 @@
 
 #include "directorios.h"
 
-#define DEBUGN7 1
+#define DEBUGN7 0
 
 #if USARCACHE==1
     static struct UltimaEntrada UltimaEntradaEscritura;
@@ -575,7 +575,7 @@ int searchEntry(const char *camino, struct CacheLRU *cache)
         for (int i = 0; i < cache->size; i++) {
             if(strcmp(cache->lastEntries[i].camino, camino) == 0)
             {
-                mingw_gettimeofday(&cache->lastEntries[i].ultima_consulta, NULL);
+                gettimeofday(&cache->lastEntries[i].ultima_consulta, NULL);
                 return i;
             }
         }
@@ -620,7 +620,7 @@ int searchEntry(const char *camino, struct CacheLRU *cache)
         {
             strcpy(cache->lastEntries[cache->size].camino, camino);
             cache->lastEntries[cache->size].p_inodo = *p_inodo;
-            mingw_gettimeofday(&cache->lastEntries[cache->size].ultima_consulta, NULL);
+            gettimeofday(&cache->lastEntries[cache->size].ultima_consulta, NULL);
             cache->size++;
         }
         else
@@ -635,7 +635,7 @@ int searchEntry(const char *camino, struct CacheLRU *cache)
             }
             strcpy(cache->lastEntries[posMin].camino, camino);
             cache->lastEntries[posMin].p_inodo = *p_inodo;
-            mingw_gettimeofday(&cache->lastEntries[posMin].ultima_consulta, NULL);
+            gettimeofday(&cache->lastEntries[posMin].ultima_consulta, NULL);
         }
     }
 
@@ -651,7 +651,7 @@ int searchEntry(const char *camino, struct CacheLRU *cache)
         return 0;
     }
 #endif
-//----------------------------- NIVEL 10 (06/05/2024 - ) -----------------------------
+//----------------------------- NIVEL 10 (06/05/2024 - 12/05/2024) -----------------------------
 
 int mi_link(const char *camino1, const char *camino2)
 {
