@@ -52,7 +52,7 @@ struct UltimaEntrada
     };
 #endif
 #if USARCACHE==3
-struct CacheLRU
+    struct CacheLRU
     {
         struct UltimaEntrada lastEntries[CACHE_SIZE];
         unsigned int size;

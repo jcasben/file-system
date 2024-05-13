@@ -442,29 +442,12 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             UltimaEntradaEscritura.p_inodo = p_inodo;
         }
     #endif
-    #if USARCACHE==2
+    #if (USARCACHE==2 || USARCACHE==3)
         if (initWriteCache == 0) {
             initWriteCache = 1;
+            #if USARCACHE==3
             writeCache.last = 0;
-            writeCache.size = 0;
-        }
-        unsigned int pos;
-        if((pos = searchEntry(camino, &writeCache)) >= 0)
-        {
-            p_inodo = writeCache.lastEntries[pos].p_inodo;
-        }
-        else
-        {
-            fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
-            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-            if (error  < 0) mostrar_error_buscar_entrada(error);
-
-            updateCache(&writeCache, camino, &p_inodo);
-        }
-    #endif
-    #if USARCACHE==3
-        if (initWriteCache == 0) {
-            initWriteCache = 1;
+            #endif
             writeCache.size = 0;
         }
         unsigned int pos;
@@ -510,29 +493,12 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                 UltimaEntradaLectura.p_inodo = p_inodo;
             }
     #endif
-    #if USARCACHE==2
+    #if (USARCACHE==2 || USARCACHE==3)
         if (initReadCache == 0) {
             initReadCache = 1;
+            #if USARCACHE==3
             readCache.last = 0;
-            readCache.size = 0;
-        }
-        unsigned int pos;
-        if((pos = searchEntry(camino, &readCache)) >= 0)
-        {
-            p_inodo = readCache.lastEntries[pos].p_inodo;
-        }
-        else
-        {
-            fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
-            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-            if (error  < 0) mostrar_error_buscar_entrada(error);
-
-            updateCache(&readCache, camino, &p_inodo);
-        }
-    #endif
-    #if USARCACHE==3
-        if (initReadCache == 0) {
-            initReadCache = 1;
+            #endif
             readCache.size = 0;
         }
         unsigned int pos;
