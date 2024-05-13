@@ -667,7 +667,6 @@ int mi_link(const char *camino1, const char *camino2)
 
 int mi_unlink(const char *camino)
 {
-    struct inodo inode;
     unsigned int p_inode_dir = 0;
     unsigned int n_inode = 0;
     unsigned int p_entry = 0;
