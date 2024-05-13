@@ -425,7 +425,7 @@ int mi_stat(const char *camino, struct STAT *p_stat)
     return p_inodo;
 }
 
-//----------------------------- NIVEL 9 (02/05/2023 - ) -----------------------------
+//----------------------------- NIVEL 9 (02/05/2023 - 13/05/2024) -----------------------------
 
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes)
 {
@@ -491,7 +491,8 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         }
     #endif
 
-    int written_bytes = mi_write_f(p_inodo, buf, offset, nbytes);
+    int written_bytes;
+    if ((written_bytes = mi_write_f(p_inodo, buf, offset, nbytes)) == FALLO) return  0;
 
     return written_bytes;
 }
@@ -517,14 +518,16 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                         "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
                         RESET
                 );
+        #endif
             } else {
+    #if DEBUGN9
                 fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
+    #endif
                 int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
                 if (error  < 0) mostrar_error_buscar_entrada(error);
                 strcpy(UltimaEntradaLectura.camino, camino);
                 UltimaEntradaLectura.p_inodo = p_inodo;
             }
-        #endif
     #endif
     #if (USARCACHE==2 || USARCACHE==3)
         if (initReadCache == 0) {
@@ -558,7 +561,8 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         }
     #endif
 
-    int read_bytes = mi_read_f(p_inodo, buf, offset, nbytes);
+    int read_bytes;
+    if ((read_bytes = mi_read_f(p_inodo, buf, offset, nbytes)) == FALLO) return 0;
 
     return read_bytes;
 }
@@ -578,7 +582,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     }
 #endif
 #if USARCACHE==3
-int searchEntry(const char *camino, struct CacheLRU *cache)
+    int searchEntry(const char *camino, struct CacheLRU *cache)
     {
         for (int i = 0; i < cache->size; i++) {
             if(strcmp(cache->lastEntries[i].camino, camino) == 0)
@@ -658,6 +662,7 @@ int searchEntry(const char *camino, struct CacheLRU *cache)
         return 0;
     }
 #endif
+
 //----------------------------- NIVEL 10 (06/05/2024 - 12/05/2024) -----------------------------
 
 int mi_link(const char *camino1, const char *camino2)
@@ -673,7 +678,7 @@ int mi_link(const char *camino1, const char *camino2)
         return FALLO;
     }
     leer_inodo(n_inode1, &inode1);
-    if((inode1.permisos & 1) == 0)
+    if((inode1.permisos & 4) != 4)
     {
         fprintf(stderr,
                 RED
@@ -686,7 +691,7 @@ int mi_link(const char *camino1, const char *camino2)
     unsigned p_inode_dir2 = 0;
     unsigned p_entry2 = 0;
     error = buscar_entrada(camino2, &p_inode_dir2, &n_inode2, &p_entry2, 1, 6);
-    if (error < 0 && error != ERROR_ENTRADA_YA_EXISTENTE)
+    if (error < 0)
     {
         mostrar_error_buscar_entrada(error);
         return FALLO;
