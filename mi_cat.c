@@ -30,24 +30,38 @@ int main(int argc, char **args)
     // Mount the device.
     if (bmount(args[1]) < 0) return FALLO;
 
-    int tamBuffer = 1500;
+    int tamBuffer = BLOCKSIZE * 4;
     char buffer[tamBuffer];
     memset(buffer, 0, tamBuffer);
-    strcpy(buffer, args[3]);
-    int read_bytes = 1;
+    int read_bytes;
     int total_bytes = 0;
     int i = 0;
 
+    if ((read_bytes = mi_read(args[2], buffer, i * tamBuffer, tamBuffer)) == FALLO) return FALLO;
     while(read_bytes > 0)
     {
-        read_bytes = mi_read(args[2], buffer, i * tamBuffer, tamBuffer);
         total_bytes += read_bytes;
-        printf("%s", buffer);
+        write(1, buffer, tamBuffer);
+        //printf("%s", buffer);
         memset(buffer, 0, tamBuffer);
         i++;
+        if ((read_bytes = mi_read(args[2], buffer, i * tamBuffer, tamBuffer)) == FALLO) return FALLO;
     }
 
-    printf("Bytes leidos: %d", read_bytes);
+    struct STAT stat;
+    mi_stat(args[2], &stat);
+    if (total_bytes != stat.tamEnBytesLog)
+    {
+        fprintf(
+           stderr,
+           RED
+           "Error: the number of bytes read does not match the file size\n"
+           RESET
+       );
+        return FALLO;
+    }
+
+    printf("\nBytes leidos: %d", total_bytes);
     // Deben coincidir 
 
     if (bumount() < 0) return FALLO;
