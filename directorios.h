@@ -124,9 +124,6 @@ void mostrar_buscar_entrada(char *camino, char reservar);
 /// \param nbytes number of bytes to write
 /// \return number of written bytes
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes);
-/// Checks if a path is in the writeCache
-/// \param camino path to search
-/// \return index of the path in the writeCache if found, -1 otherwise
 #if USARCACHE==2
 /// Searches an entry in a FIFO Cache
 /// \param camino path to the entry
