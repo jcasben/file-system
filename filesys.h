@@ -10,7 +10,6 @@
 #include "directorios.h"
 
 #define TAMDISKNAME 128
-#define RESET "\033[0m"
 #define BLACK "\x1B[30m"
 #define RED "\x1b[31m"
 #define GREEN "\x1b[32m"

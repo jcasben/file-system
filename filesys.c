@@ -50,7 +50,7 @@ int execute_line(char *line)
     else if (strcmp(args[0], "touch") == 0) fs_touch(args);
     else if (strcmp(args[0], "chmod") == 0) fs_chmod(args);
     else if (strcmp(args[0], "cd") == 0) fs_cd(args);
-    else if (strcmp(args[0], "help") == 0)
+    else if (strcmp(args[0], "help") == 0) help();
 
     return 0;
 }
