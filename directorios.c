@@ -8,6 +8,7 @@
 #include "directorios.h"
 
 #define DEBUGN7 0
+#define DEBUGN9 0
 
 #if USARCACHE==1
     static struct UltimaEntrada UltimaEntradaEscritura;
@@ -237,13 +238,13 @@ void mostrar_error_buscar_entrada(int error)
 {
     switch (error)
     {
-        case -2: fprintf(stderr, RED "Error: Camino incorrecto.\n" RESET); break;
-        case -3: fprintf(stderr, RED "Error: Permiso denegado de lectura.\n" RESET); break;
-        case -4: fprintf(stderr, RED "Error: No existe el archivo o el directorio.\n" RESET); break;
-        case -5: fprintf(stderr, RED "Error: No existe algún directorio intermedio.\n" RESET); break;
-        case -6: fprintf(stderr, RED "Error: Permiso denegado de escritura.\n" RESET); break;
-        case -7: fprintf(stderr, RED "Error: El archivo ya existe.\n" RESET); break;
-        case -8: fprintf(stderr, RED "Error: No es un directorio.\n" RESET); break;
+        case -2: fprintf(stderr, RED "ERROR: incorrect path\n" RESET); break;
+        case -3: fprintf(stderr, RED "ERROR: denied reading permission\n" RESET); break;
+        case -4: fprintf(stderr, RED "ERROR: no such file or directory\n" RESET); break;
+        case -5: fprintf(stderr, RED "ERROR: no such intermediate directory\n" RESET); break;
+        case -6: fprintf(stderr, RED "ERROR: denied writing permission\n" RESET); break;
+        case -7: fprintf(stderr, RED "ERROR: file already exists\n" RESET); break;
+        case -8: fprintf(stderr, RED "ERROR: it's not a direcotory\n" RESET); break;
     }
 }
 
@@ -440,14 +441,18 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         if (strcmp(UltimaEntradaEscritura.camino, camino) == 0)
         {
             p_inodo = UltimaEntradaEscritura.p_inodo;
+        #if DEBUGN9
             fprintf(stderr,
                     BLUE
                     "[mi_write() -> Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n"
                     RESET
             );
+        #endif
         } else
         {
+        #if DEBUGN9
             fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
+        #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error  < 0) mostrar_error_buscar_entrada(error);
             strcpy(UltimaEntradaEscritura.camino, camino);
@@ -466,15 +471,19 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         if(pos >= 0)
         {
             p_inodo = writeCache.lastEntries[pos].p_inodo;
+        #if DEBUGN9
             fprintf(stderr,
                     BLUE
                     "[mi_write() -> Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n"
                     RESET
             );
+        #endif
         }
         else
         {
+        #if DEBUGN9
             fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
+        #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error  < 0) mostrar_error_buscar_entrada(error);
 
@@ -502,6 +511,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         if (strcmp(UltimaEntradaLectura.camino, camino) == 0)
             {
                 p_inodo = UltimaEntradaLectura.p_inodo;
+        #if DEBUGN9
                 fprintf(stderr,
                         BLUE
                         "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
@@ -514,6 +524,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                 strcpy(UltimaEntradaLectura.camino, camino);
                 UltimaEntradaLectura.p_inodo = p_inodo;
             }
+        #endif
     #endif
     #if (USARCACHE==2 || USARCACHE==3)
         if (initReadCache == 0) {
@@ -527,15 +538,19 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         if(pos >= 0)
         {
             p_inodo = readCache.lastEntries[pos].p_inodo;
+        #if DEBUGN9
             fprintf(stderr,
                     BLUE
                     "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
                     RESET
             );
+        #endif
         }
         else
         {
+        #if DEBUGN9
             fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
+        #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error < 0) mostrar_error_buscar_entrada(error);
 
@@ -578,7 +593,6 @@ int searchEntry(const char *camino, struct CacheLRU *cache)
 #if USARCACHE==2
     void updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo)
     {
-
         if(cache->size < CACHE_SIZE)
         {
             strcpy(cache->lastEntries[cache->size].camino, camino);
