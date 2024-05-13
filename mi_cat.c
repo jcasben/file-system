@@ -32,14 +32,22 @@ int main(int argc, char **args)
 
     int tamBuffer = 1500;
     char buffer[tamBuffer];
+    memset(buffer, 0, tamBuffer);
     strcpy(buffer, args[3]);
+    int read_bytes = 1;
+    int total_bytes = 0;
+    int i = 0;
 
-    //STAT stats = le
-
-    int read_bytes = mi_read(args[2], buffer, 0, tamBuffer);
+    while(read_bytes > 0)
+    {
+        read_bytes = mi_read(args[2], buffer, i * tamBuffer, tamBuffer);
+        total_bytes += read_bytes;
+        printf("%s", buffer);
+        memset(buffer, 0, tamBuffer);
+        i++;
+    }
 
     printf("Bytes leidos: %d", read_bytes);
-    printf("%s\n", buffer);
     // Deben coincidir 
 
     if (bumount() < 0) return FALLO;
