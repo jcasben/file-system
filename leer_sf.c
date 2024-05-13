@@ -23,7 +23,6 @@ void mostrar_buscar_entrada(char *camino, char reservar){
         mostrar_error_buscar_entrada(error);
     }
     printf("**********************************************************************\n");
-    return;
 }
 
 int main(int argc, char **argv)

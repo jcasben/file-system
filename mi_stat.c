@@ -11,7 +11,7 @@ int main(int argc, char **args)
 {
     if(argc != 3)
     {
-        fprintf(stderr, RED "Syntax error: ./mi_stat <disco> </ruta>\n" RESET);
+        fprintf(stderr, RED "ERROR: invalid syntax. Usage: ./mi_stat <disco> </ruta>\n" RESET);
         return FALLO;
     }
 
@@ -22,9 +22,10 @@ int main(int argc, char **args)
     char atime[80];
     char mtime[80];
     char ctime[80];
-    if(mi_stat(args[2], &p_stat) < 0) return FALLO;
+    unsigned int ninodo;
+    if((ninodo = mi_stat(args[2], &p_stat)) < 0) return FALLO;
 
-//    printf("Nº de inodo: %d\n", p_stat.);
+    printf("Nº de inodo: %d\n", ninodo);
     printf("tipo: %c\n", p_stat.tipo);
     printf("permisos: %d\n", p_stat.permisos);
 

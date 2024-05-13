@@ -19,7 +19,7 @@ int main(int argc, char **args)
         fprintf(
             stderr, 
             RED 
-            "Invalid syntax. Usage: ./escribir <nombre_dispositivo> <\"$(cat fichero\">"
+            "ERROR: invalid syntax. Usage: ./escribir <nombre_dispositivo> <\"$(cat fichero\">"
             "<diferentes_inodos>\n" 
             RESET
         );
@@ -31,7 +31,7 @@ int main(int argc, char **args)
     
     int dif_inodos = atoi(args[3]);
 
-    printf("longitud texto: %ld", strlen(args[2]));
+    printf("text length: %ld", strlen(args[2]));
     char buffer[strlen(args[2])];
     strcpy(buffer, args[2]);
 
@@ -79,7 +79,7 @@ int main(int argc, char **args)
         fprintf(
             stderr,
             RED 
-            "Invalid argument. The third argument must be 0 or 1\n"
+            "ERROR: invalid argument. The third argument must be 0 or 1\n"
             RESET
         );
         return FALLO;

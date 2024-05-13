@@ -15,7 +15,7 @@ int main(int argc, char **args)
         fprintf(
             stderr, 
             RED 
-            "Invalid syntax. Usage: ./mi_escribir <disco> </ruta_fichero>"
+            "ERROR: invalid syntax. Usage: ./mi_escribir <disco> </ruta_fichero>"
             "<texto> <offset>\n" 
             RESET
         );
@@ -28,11 +28,11 @@ int main(int argc, char **args)
     unsigned int offset = (unsigned int) atoi(args[4]);
     unsigned int nbytes = (unsigned int) strlen(args[3]);
 
-    printf("longitud texto: %d", nbytes);
+    printf("Text length: %d\n", nbytes);
     char buffer[nbytes];
     strcpy(buffer, args[3]);
 
-    printf("Bytes escritos: %d", mi_write(args[2], buffer, offset, nbytes));
+    printf("Writen bytes: %d\n", mi_write(args[2], buffer, offset, nbytes));
 
     if (bumount() < 0) return FALLO;
 

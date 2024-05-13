@@ -21,11 +21,8 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-    if (bmount(args[1]) < 0)
-    {
-        fprintf(stderr, RED "Error mounting the device\n" RESET);
-        return FALLO;
-    }
+    if (bmount(args[1]) < 0) return FALLO;
+
 
     if (mi_unlink(args[2]) < 0)
     {
@@ -33,10 +30,5 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-    if (bumount() < 0)
-    {
-        fprintf(stderr, RED "Error unmounting the device\n" RESET);
-        return FALLO;
-    }
-    return EXITO;
+    if (bumount() < 0) return FALLO;
 }

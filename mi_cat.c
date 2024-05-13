@@ -15,7 +15,7 @@ int main(int argc, char **args)
         fprintf(
                 stderr,
                 RED
-                "Invalid syntax. Usage: ./mi_cat <disco> </ruta_fichero>\n"
+                "ERROR: invalid syntax. Usage: ./mi_cat <disco> </ruta_fichero>\n"
                 RESET
         );
         return FALLO;
@@ -23,7 +23,7 @@ int main(int argc, char **args)
 
     if(args[2][strlen(args[2])-1]==('/'))
     {
-        fprintf(stderr, RED "Error: la ruta no se corresponde a un fichero" RESET);
+        fprintf(stderr, RED "ERROR: the path does not belong to a file\n" RESET);
         return FALLO;
     }
 
@@ -55,14 +55,13 @@ int main(int argc, char **args)
         fprintf(
            stderr,
            RED
-           "Error: the number of bytes read does not match the file size\n"
+           "ERROR: the number of bytes read does not match the file size\n"
            RESET
        );
         return FALLO;
     }
 
-    printf("\nBytes leidos: %d", total_bytes);
-    // Deben coincidir 
+    printf("\nRead bytes: %d", total_bytes);
 
     if (bumount() < 0) return FALLO;
 

@@ -9,25 +9,13 @@
 
 int main(int argc, char **args)
 {
-    if (argc < 3 || argc > 4)
+    if (argc < 3 || argc > 4 || (argc == 4 && strcmp(args[1], "-l") != 0))
     {
         fprintf(
             stderr,
             RED
-            "Syntax error: ./mi_ls <disco> </ruta>. Try ./mi_ls -l <disco> </ruta> to get an extended information\n"
+            "ERROR: invalid syntax. Usage: ./mi_ls [-l] <disco> </ruta>\n"
             RESET
-        );
-        return FALLO;
-    }
-
-    if (argc == 4 && strcmp(args[1], "-l") != 0)
-    {
-        fprintf(
-            stderr,
-            RED
-            "Flag %s not recognized. Try using flag -l to get an extended view\n"
-            RESET,
-            args[1]
         );
         return FALLO;
     }

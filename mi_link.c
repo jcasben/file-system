@@ -13,19 +13,13 @@ int main(int argc, char **argv)
     {
         fprintf(stderr,
                 RED
-                "Syntaxis error: ./mi_link disco /ruta_fichero_original /ruta_enlace\n"
+                "ERROR: invalid syntax. Usage: ./mi_link disco /ruta_fichero_original /ruta_enlace\n"
                 RESET);
         return FALLO;
     }
 
-    if (bmount(argv[1]) < 0)
-    {
-        fprintf(stderr,
-                RED
-                "Error mounting the device\n"
-                RESET);
-        return FALLO;
-    }
+    if (bmount(argv[1]) < 0) return FALLO;
+
 
     if (argv[2][strlen(argv[2]) - 1] == '/')
     {
@@ -50,13 +44,5 @@ int main(int argc, char **argv)
         return FALLO;
     }
 
-    if (bumount() < 0)
-    {
-        fprintf(stderr,
-                RED
-                "Error unmounting the device\n"
-                RESET);
-        return FALLO;
-    }
-    return EXITO;
+    if (bumount() < 0) return FALLO;
 }

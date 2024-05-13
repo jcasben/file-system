@@ -14,7 +14,7 @@ int main(int argc, char **args)
         fprintf(
             stderr,
             RED
-            "Syntax error: ./mi_mkdir <disco> <permisos> </ruta/>\n"
+            "ERROR: invalid syntax. Usage: ./mi_mkdir <disco> <permisos> </ruta/>\n"
             RESET
         );
         return FALLO;

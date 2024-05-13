@@ -14,7 +14,7 @@ int main(int argc, char **argv)
         fprintf(
             stderr,
             RED
-            "Syntax error: ./mi_touch <disco> <permisos> </ruta>\n"
+            "ERROR: invalid syntax. Usage: ./mi_touch <disco> <permisos> </ruta>\n"
             RESET
         );
         return FALLO;  
@@ -26,7 +26,7 @@ int main(int argc, char **argv)
         fprintf(
             stderr,
             RED
-            "Error: permissions must be in between 0 and 7\n"
+            "ERROR: permissions must be in between 0 and 7\n"
             RESET
         );
         return FALLO;
@@ -48,6 +48,4 @@ int main(int argc, char **argv)
     mi_creat(argv[3], permisos);
 
     if (bumount() < 0) return FALLO;
-
-    return EXITO;
 }

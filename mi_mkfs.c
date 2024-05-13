@@ -12,23 +12,19 @@ int main(int argc, char **argv)
     // Check if the all the arguments are passed
     if (argc != 3)
     {
-        fprintf(stderr, RED "Too few arguments. Usage: ./mi_mkfs <device name> <nblocks>\n" RESET);
+        fprintf(stderr, RED "ERROR: invalid syntax. Usage: ./mi_mkfs <device name> <nblocks>\n" RESET);
         return FALLO;
     }
 
     // Mounting the device with bmount(<device_name>).
-    if (bmount(argv[1]) < 0)
-    {
-        fprintf(stderr, RED "Error mounting the device\n" RESET);
-        return FALLO;
-    }
+    if (bmount(argv[1]) < 0) return FALLO;
 
     // Parse the number of blocks from the arguments
     int nblocks = atoi(argv[2]);
 
     if (nblocks < 0)
     {
-        fprintf(stderr, RED "The number of blocks must be greater than 0.\n" RESET);
+        fprintf(stderr, RED "ERROR: the number of blocks must be greater than 0.\n" RESET);
         return FALLO;
     }
 
@@ -53,9 +49,5 @@ int main(int argc, char **argv)
     reservar_inodo('d', 7);
 
     // Unmounting the device
-    if (bumount() < 0)
-    {
-        fprintf(stderr, RED "Error unmounting the device\n" RESET);
-        return FALLO;
-    }
+    if (bumount() < 0) return FALLO;
 }
