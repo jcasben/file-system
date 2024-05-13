@@ -86,12 +86,12 @@ void mostrar_error_buscar_entrada(int error);
 /// \param permisos permissions
 /// \return EXITO
 int mi_creat(const char *camino, unsigned char permisos);
-///
-/// \param camino
-/// \param buffer
-/// \param tipo
-/// \param flag
-/// \return
+/// Builds a buffer with the information of the entries of a directory or a file.
+/// \param camino path to the file or directory
+/// \param buffer buffer to save the information
+/// \param tipo type of the entry (directory or file)
+/// \param flag l if an extended view is wanted
+/// \return EXITO
 int mi_dir(const char *camino, char *buffer, char tipo, char flag);
 /// Writes the normal version of an entry onto a buffer
 /// \param entry entry to be written
@@ -111,8 +111,11 @@ int mi_chmod(const char *camino, unsigned char permisos);
 /// Gets the stats of a file
 /// \param camino the path of the file
 /// \param p_stat pointer to the struct where the stats will be stored
-/// \return EXITO if the stats were obtained successfully, FALLO otherwise
+/// \return inode number of the entry, FALLO if the stats were not obtained successfully
 int mi_stat(const char *camino, struct STAT *p_stat);
+/// Auxiliar function to test functionality
+/// \param camino path to the file or directory
+/// \param reservar 1 if we want to reserve the entry; 0 if we want to consult
 void mostrar_buscar_entrada(char *camino, char reservar);
 /// Writes the content of a buffer in the given file
 /// \param camino file's path
@@ -125,12 +128,32 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 /// \param camino path to search
 /// \return index of the path in the writeCache if found, -1 otherwise
 #if USARCACHE==2
+/// Searches an entry in a FIFO Cache
+/// \param camino path to the entry
+/// \param cache structure where the cache is stored
+/// \return the index of the entry in the cache; -1 if it doesn't exist in the cache
 int searchEntry(const char *camino, struct CacheFIFO *cache);
+/// Adds an entry to the LRU Cache
+/// \param cache structure where the FIFO Cache is stored
+/// \param camino path to the entry
+/// \param p_inodo inode number of the entry
 void updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo);
 #endif
 #if USARCACHE==3
+/// Searches an entry in the LRU Cache
+/// \param camino path of the entry
+/// \param cache structure where the LRU Cache is stored
+/// \return the index of the entry in the cache; -1 if it doesn't exist in the cache
 int searchEntry(const char *camino, struct CacheLRU *cache);
+/// Adds an entry to the LRU Cache
+/// \param cache structure where the LRU Cache is stored
+/// \param camino path to the entry
+/// \param p_inodo inode number of the entry
 void updateCache(struct CacheLRU *cache, const char *camino, const unsigned int *p_inodo);
+/// Compares two time stamps
+/// \param t1 time stamp 1
+/// \param t2 time stamp 2
+/// \return 1 if t1 is greater; -1 if t2 is greater
 int compareTimevals(const struct timeval *t1, const struct timeval *t2);
 #endif
 /// Reads the content of a file and stores it in a buffer
@@ -149,4 +172,7 @@ int mi_link(const char *camino1, const char *camino2);
 /// \param camino entry to be deleted
 /// \return EXITO
 int mi_unlink(const char *camino);
+/// Checks if a path is an existing directory
+/// \param camino path to the entry
+/// \return EXITO if it is an existing directory
 int is_directory(const char *camino);
