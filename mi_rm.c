@@ -24,11 +24,7 @@ int main(int argc, char **args)
     if (bmount(args[1]) < 0) return FALLO;
 
 
-    if (mi_unlink(args[2]) < 0)
-    {
-        fprintf(stderr, RED "Error deleting the file\n" RESET);
-        return FALLO;
-    }
+    mi_unlink(args[2]);
 
     if (bumount() < 0) return FALLO;
 }
