@@ -41,12 +41,13 @@ int main(int argc, char **args)
     while(read_bytes > 0)
     {
         total_bytes += read_bytes;
-        write(1, buffer, tamBuffer);
+        write(1, buffer, read_bytes);
         //printf("%s", buffer);
         memset(buffer, 0, tamBuffer);
         i++;
         if ((read_bytes = mi_read(args[2], buffer, i * tamBuffer, tamBuffer)) == FALLO) return FALLO;
     }
+
 
     struct STAT stat;
     mi_stat(args[2], &stat);
@@ -61,7 +62,7 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-    printf("\nRead bytes: %d", total_bytes);
+    fprintf(stderr, "\nRead bytes: %d\n", total_bytes);
 
     if (bumount() < 0) return FALLO;
 

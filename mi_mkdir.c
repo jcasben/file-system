@@ -36,6 +36,7 @@ int main(int argc, char **args)
     if (permisos < 3 || permisos > 7)
     {
         fprintf(stderr, RED "ERROR: the permissions must be in between 3 and 7\n" RESET);
+        return FALLO;
     }
 
     if (bmount(args[1]) < 0) return FALLO;
