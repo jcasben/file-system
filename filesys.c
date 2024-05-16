@@ -50,6 +50,9 @@ int execute_line(char *line)
     else if (strcmp(args[0], "touch") == 0) fs_touch(args);
     else if (strcmp(args[0], "chmod") == 0) fs_chmod(args);
     else if (strcmp(args[0], "cd") == 0) fs_cd(args);
+    else if (strcmp(args[0], "rm") == 0) fs_rm(args);
+    else if (strcmp(args[0], "rmdir") == 0) fs_rmdir(args);
+    else if (strcmp(args[0], "rn") == 0) fs_rn(args);
     else if (strcmp(args[0], "help") == 0) help();
 
     return 0;
@@ -242,6 +245,75 @@ void fs_cd(char **args)
     }
     bumount();
     strcpy(path, new_path);
+}
+
+void fs_rm(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+
+    char file_path[PATHSIZE];
+    strcpy(file_path, path);
+    strcat(file_path, args[1]);
+    args[1] = disk_name;
+    args[2] = file_path;
+    args[3] = NULL;
+    int wstatus;
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execvp("./mi_rm", args);
+    } else if (pid > 0) wait(&wstatus);
+}
+
+void fs_rmdir(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+
+    char file_path[PATHSIZE];
+    strcpy(file_path, path);
+    strcat(file_path, args[1]);
+    args[1] = disk_name;
+    args[2] = file_path;
+    args[3] = NULL;
+    int wstatus;
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execvp("./mi_rmdir", args);
+    } else if (pid > 0) wait(&wstatus);
+}
+
+void fs_rn(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+
+    char file_path[PATHSIZE];
+    strcpy(file_path, path);
+    strcat(file_path, args[1]);
+    char new_path[PATHSIZE];
+    strcpy(new_path, args[2]);
+    args[1] = disk_name;
+    args[2] = file_path;
+    args[3] = new_path;
+    args[4] = NULL;
+    int wstatus;
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execvp("./mi_rn", args);
+    } else if (pid > 0) wait(&wstatus);
 }
 
 void help()
