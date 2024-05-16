@@ -52,6 +52,10 @@ int execute_line(char *line)
     else if (strcmp(args[0], "cd") == 0) fs_cd(args);
     else if (strcmp(args[0], "rm") == 0) fs_rm(args);
     else if (strcmp(args[0], "rmdir") == 0) fs_rmdir(args);
+    else if (strcmp(args[0], "cat") == 0) fs_cat(args);
+    else if (strcmp(args[0], "write") == 0) fs_write(args);
+    else if (strcmp(args[0], "link") == 0) fs_link(args);
+    else if (strcmp(args[0], "stat") == 0) fs_stat(args);
     else if (strcmp(args[0], "rn") == 0) fs_rn(args);
     else if (strcmp(args[0], "help") == 0) help();
 
@@ -314,6 +318,42 @@ void fs_rn(char **args)
     {
         execvp("./mi_rn", args);
     } else if (pid > 0) wait(&wstatus);
+}
+
+void fs_cat(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+}
+
+void fs_write(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+}
+
+void fs_link(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+}
+
+void fs_stat(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
 }
 
 void help()
