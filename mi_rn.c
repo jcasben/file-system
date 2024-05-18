@@ -34,18 +34,20 @@ int main(int argc, char **args)
 
     char path[TAMNOMBRE * PROFUNDIDAD];
     memset(path, 0, TAMNOMBRE * PROFUNDIDAD);
+    strcat(path, "/");
+    strcat(path, args[3]);
+    if (args[2][strlen(args[2])] == '/') strcat(path, "/");
 
-    if (args[2][strlen(args[2])] == '/') strncpy(path, args[2], strlen(args[2]) - 1);
-    else strcpy(path, args[2]);
+    unsigned p_inodo_dir2 = p_inodo_dir;
+    unsigned int n_inode2 = n_inode;
+    unsigned int p_entry2 = p_entry;
 
-    char *last_dir = strrchr(path, '/');
-    char new_path[TAMNOMBRE * PROFUNDIDAD];
-    printf("%s\n", last_dir);
-    strncpy(new_path, path, strlen(path) - strlen(last_dir));
-    strcat(new_path, args[3]);
-    if (args[2][strlen(args[2])] == '/') strcat(new_path, "/");
-
-    printf("%s\n", new_path);
+    error = buscar_entrada(path, &p_inodo_dir2, &n_inode2, &p_entry2, 0, 6);
+    if(error >= 0)
+    {
+        fprintf(stderr, RED "ERROR: the file/directory with name %s already exists\n" RESET, args[3]);
+        return FALLO;
+    }
 
     struct entrada entrada;
     if(mi_read_f(p_inodo_dir, &entrada, p_entry * sizeof(struct entrada),
