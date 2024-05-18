@@ -485,7 +485,11 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
         #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-            if (error  < 0) mostrar_error_buscar_entrada(error);
+            if (error  < 0)
+            {
+                mostrar_error_buscar_entrada(error);
+                return FALLO;
+            }
 
             updateCache(&writeCache, camino, &p_inodo);
         }
@@ -555,7 +559,11 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
         #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-            if (error < 0) mostrar_error_buscar_entrada(error);
+            if (error < 0)
+            {
+                mostrar_error_buscar_entrada(error);
+                return FALLO;
+            }
 
             updateCache(&readCache, camino, &p_inodo);
         }
