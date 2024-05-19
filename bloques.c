@@ -6,15 +6,23 @@
 */
 
 #include "bloques.h"
+#include "semaforo_mutex_posix.h"
 
 // Global variable for the file descriptor of the virtual device.
 static int fd = 0;
+static sem_t *mutex;
 
 /// @brief Mounts the virtual disk, opening it and setting the file descriptor.
 /// @param camino path to the virtual disk.
 /// @return the file descriptor of the virtual disk or -1 (FALLO) if an error occurs.
 int bmount(const char *camino)
 {
+    if (!mutex)
+    {
+        mutex = initSem();
+        if (mutex == SEM_FAILED) return -1;
+    }
+
     if (camino == NULL)
     {
         fprintf(stderr, RED "ERROR: unvalid path\n" RESET);
@@ -38,6 +46,7 @@ int bmount(const char *camino)
 /// if an error occurs.
 int bumount()
 {
+    deleteSem();
     if (close(fd) < 0)
     {
         perror(RED "ERROR" RESET);
@@ -91,4 +100,14 @@ int bread(unsigned int nbloque, void *buf)
     }
 
     return BLOCKSIZE;
+}
+
+void mi_waitSem()
+{
+    waitSem(mutex);
+}
+
+void mi_signalSem()
+{
+    signalSem(mutex);
 }

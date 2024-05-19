@@ -257,9 +257,14 @@ int mi_creat(const char *camino, unsigned char permisos)
     unsigned int p_inode_dir = SB.posInodoRaiz;
     unsigned int n_inode = 0;
     unsigned int p_entry = 0;
-    mostrar_error_buscar_entrada(
-        buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 1, permisos)
-    );
+    int error = buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 1, permisos);
+    if (error < 0)
+    {
+        mostrar_error_buscar_entrada(error);
+        mi_signalSem();
+        return -1;
+    }
+    mi_signalSem();
 
     return EXITO;
 }
