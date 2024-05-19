@@ -134,7 +134,7 @@ int searchEntry(const char *camino, struct CacheFIFO *cache);
 /// \param cache structure where the FIFO Cache is stored
 /// \param camino path to the entry
 /// \param p_inodo inode number of the entry
-void updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo);
+unsigned int updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo);
 #endif
 #if USARCACHE==3
 /// Searches an entry in the LRU Cache

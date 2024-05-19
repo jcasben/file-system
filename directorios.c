@@ -8,7 +8,7 @@
 #include "directorios.h"
 
 #define DEBUGN7 0
-#define DEBUGN9 0
+#define DEBUGN9 1
 
 #if USARCACHE==1
     static struct UltimaEntrada UltimaEntradaEscritura;
@@ -471,27 +471,40 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         if(pos >= 0)
         {
             p_inodo = writeCache.lastEntries[pos].p_inodo;
-        #if DEBUGN9
-            fprintf(stderr,
-                    BLUE
-                    "[mi_write() -> Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n"
-                    RESET
-            );
-        #endif
+            #if DEBUGN9
+                fprintf(stderr,
+                        BLUE
+                        "[mi_write() -> Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n"
+                        RESET
+                );
+                fprintf(stderr,
+                        BLUE
+                        "[mi_write() -> Utilizamos cache[%d]: %s]\n"
+                        RESET,
+                        pos, writeCache.lastEntries[pos].camino
+                );
+            #endif
         }
         else
         {
-        #if DEBUGN9
-            fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
-        #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error  < 0)
             {
                 mostrar_error_buscar_entrada(error);
                 return FALLO;
             }
-
-            updateCache(&writeCache, camino, &p_inodo);
+            #if DEBUGN9
+                fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
+            #endif
+            unsigned int posc = updateCache(&writeCache, camino, &p_inodo);
+            #if DEBUGN9
+                fprintf(
+                        stderr,
+                        ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n"
+                        RESET,
+                        posc, camino
+                );
+            #endif
         }
     #endif
 
@@ -603,13 +616,16 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     }
 #endif
 #if USARCACHE==2
-    void updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo)
+    unsigned int updateCache(struct CacheFIFO *cache, const char *camino, const unsigned int *p_inodo)
     {
+        unsigned int pos;
+
         if(cache->size < CACHE_SIZE)
         {
             strcpy(cache->lastEntries[cache->size].camino, camino);
             cache->lastEntries[cache->size].p_inodo = *p_inodo;
             cache->lastEntries[cache->size].a = 1;
+            pos = cache->size;
             cache->size++;
         }
         else
@@ -619,6 +635,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                 strcpy(cache->lastEntries[cache->last % CACHE_SIZE].camino, camino);
                 cache->lastEntries[cache->last % CACHE_SIZE].p_inodo = *p_inodo;
                 cache->lastEntries[cache->last % CACHE_SIZE].a = 1;
+                pos = cache->last % CACHE_SIZE;
                 cache->last++;
             }
             else
@@ -626,10 +643,13 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                 do
                 {
                     cache->lastEntries[cache->last % CACHE_SIZE].a = 0;
+                    pos = cache->last % CACHE_SIZE;
                     cache->last++;
                 } while(cache->lastEntries[cache->last % CACHE_SIZE].a == 1);
             }
         }
+
+        return pos;
     }
 #endif
 #if USARCACHE==3
