@@ -10,6 +10,7 @@
 
 // Global variable for the file descriptor of the virtual device.
 static int fd = 0;
+static unsigned int inside_sc = 0;
 static sem_t *mutex;
 
 /// @brief Mounts the virtual disk, opening it and setting the file descriptor.
@@ -102,12 +103,24 @@ int bread(unsigned int nbloque, void *buf)
     return BLOCKSIZE;
 }
 
+
 void mi_waitSem()
 {
-    waitSem(mutex);
+    // It is made so that you don't have to do wait twice
+    if (!inside_sc)
+    {
+        waitSem(mutex);
+    }
+    inside_sc++;
 }
 
 void mi_signalSem()
 {
-    signalSem(mutex);
+    // It is made so that you don't have to do signal twice
+    inside_sc--;
+    if (!inside_sc)
+    {
+        signalSem(mutex);
+    }
+    
 }

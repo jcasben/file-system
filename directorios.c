@@ -252,17 +252,20 @@ void mostrar_error_buscar_entrada(int error)
 
 int mi_creat(const char *camino, unsigned char permisos)
 {
+    mi_waitSem();
     struct superbloque SB;
     bread(posSB, &SB);
     unsigned int p_inode_dir = SB.posInodoRaiz;
     unsigned int n_inode = 0;
     unsigned int p_entry = 0;
+
     int error = buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 1, permisos);
     if (error < 0)
     {
         mostrar_error_buscar_entrada(error);
         mi_signalSem();
-        return -1;
+
+        return FALLO;
     }
     mi_signalSem();
 
@@ -700,6 +703,8 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 
 int mi_link(const char *camino1, const char *camino2)
 {
+    mi_waitSem();
+
     struct inodo inode1;
     unsigned int p_inode_dir1 = 0;
     unsigned int n_inode1 = 0;
@@ -708,6 +713,8 @@ int mi_link(const char *camino1, const char *camino2)
     if (error < 0)
     {
         mostrar_error_buscar_entrada(error);
+        mi_signalSem();
+
         return FALLO;
     }
     leer_inodo(n_inode1, &inode1);
@@ -718,6 +725,9 @@ int mi_link(const char *camino1, const char *camino2)
                 "ERROR: the entry to be linked doesn't have read permissions\n"
                 RESET
         );
+        mi_signalSem();
+
+        return FALLO;
     }
 
     unsigned int n_inode2 = 0;
@@ -727,19 +737,32 @@ int mi_link(const char *camino1, const char *camino2)
     if (error < 0)
     {
         mostrar_error_buscar_entrada(error);
+        mi_signalSem();
+
         return FALLO;
     }
+    mi_signalSem();
 
     struct entrada entry;
-    mi_read_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada));
+    if (mi_read_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) return FALLO;
 
     unsigned int inode_to_delete = entry.ninodo;
     entry.ninodo = n_inode1;
-    mi_write_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada));
+
+    if (mi_write_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) return FALLO;
+    
+    mi_waitSem();
     liberar_inodo(inode_to_delete);
+    
     inode1.nlinks = inode1.nlinks + 1;
     inode1.ctime = time(NULL);
-    if (escribir_inodo(n_inode1, &inode1) == FALLO) return FALLO;
+
+    if (escribir_inodo(n_inode1, &inode1) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
+    mi_signalSem();
 
     return EXITO;
 }
@@ -753,18 +776,21 @@ int mi_unlink(const char *camino)
     int error = buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6);
     if (error < 0)
     {
-        mostrar_error_buscar_entrada(error);
+        mostrar_error_buscar_entrada(error);        
         return FALLO;
     }
 
     struct entrada entry;
     mi_read_f(p_inode_dir, &entry, p_entry * sizeof(struct entrada), sizeof(struct entrada));
 
+    mi_waitSem();
     struct inodo inode_entry;
     leer_inodo(entry.ninodo, &inode_entry);
     if (inode_entry.tipo == 'd' && inode_entry.tamEnBytesLog > 0)
     {
         fprintf(stderr, RED "ERROR: can not delete not empty directory" RESET);
+        mi_signalSem();
+
         return FALLO;
     }
 

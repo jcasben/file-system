@@ -38,41 +38,91 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     // Treat the case in which the buffer fits inside 1 block.
     if (primerBL == ultimoBL)
     {
+        mi_waitSem();
         int nbfisico = traducir_bloque_inodo(&inode, primerBL, 1);
         char buf_bloque[BLOCKSIZE];
-        if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
+        if (bread(nbfisico, buf_bloque) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        mi_signalSem();
 
         // Copy the new data of buf_original to the buffer that contains
         // the data of the block that we read. Then, write the updated block.       
         memcpy(buf_bloque + desp1, buf_original, nbytes);
-        if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
 
+        mi_waitSem();
+        if (bwrite(nbfisico, buf_bloque) == FALLO) 
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        mi_signalSem();
         written_bytes = nbytes;
     }
     // Case where the writing affects to more than 1 block.
     else
     {
         // FASE 1: First logical block
+        mi_waitSem();
         int nbfisico = traducir_bloque_inodo(&inode, primerBL, 1);
         char buf_bloque[BLOCKSIZE];
-        if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
+        if (bread(nbfisico, buf_bloque) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        mi_signalSem();
+
         // Copy the bytes that belong to the first block to the buffer
         //that contains the data of the block.
         memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
-        if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
+
+        mi_waitSem();
+        if (bwrite(nbfisico, buf_bloque) == FALLO) 
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        mi_signalSem();
+
         written_bytes += BLOCKSIZE - desp1;
         // FASE 2: Intermediate logical blocks.
         for (size_t i = primerBL + 1; i < ultimoBL; i++)
         {
+            mi_waitSem();
+            
             nbfisico = traducir_bloque_inodo(&inode, i, 1);
             if ((written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE)) == FALLO)
+            {
+                mi_signalSem();
                 return FALLO;
+            }
+
+            mi_signalSem();
         }
+        
         // FASE 3: Last logical block.
+        mi_waitSem();
         nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 1);
-        if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
+        if (bread(nbfisico, buf_bloque) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        mi_signalSem();
+        
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
-        if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
+
+        mi_waitSem();
+        if (bwrite(nbfisico, buf_bloque) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        mi_signalSem();
+
         written_bytes += desp2 + 1;
     }
     // If we have written further than the end of the file
@@ -83,8 +133,15 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         inode.ctime = time(NULL);
     }
     inode.mtime = time(NULL);
-    if (escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
 
+    mi_waitSem();
+    if (escribir_inodo(ninodo, &inode) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
+    mi_signalSem();
+    
     return written_bytes;
 } 
 
@@ -128,11 +185,18 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     if(primerBL == ultimoBL)
     {
         int nbfisico = traducir_bloque_inodo(&inode, primerBL, 0);
+        
         if (nbfisico != -1)
         {
             char buf_bloque[BLOCKSIZE];
+            mi_waitSem();
             // Read the block where the data is stored.
-            if(bread(nbfisico, buf_bloque) == FALLO) return FALLO;
+            if(bread(nbfisico, buf_bloque) == FALLO)
+            {
+                mi_signalSem();
+                return FALLO
+            }
+            mi_signalSem();
             // Copy the slice of the block that we want to read to the buffer.
             memcpy(buf_original, buf_bloque + desp1, nbytes);
             
@@ -144,6 +208,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             // If the block is not allocated, we dont change the
             // buffer (because it is full of 0's) and return nbytes
             // as the number of bytes read.
+            mi_signalSem();
             return nbytes;
         }
 
@@ -160,7 +225,14 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         // If the block doesn't exist, we don't read it.
         if (nbfisico != -1)
         {
-            if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
+            mi_waitSem();
+            if (bread(nbfisico, buf_bloque) == FALLO) 
+            {
+                mi_signalSem();
+                return FALLO;
+            }
+            mi_signalSem();
+
             memcpy(buf_original, buf_bloque + desp1, BLOCKSIZE - desp1);   
         }
         
@@ -173,7 +245,13 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             if ((nbfisico = traducir_bloque_inodo(&inode, i, 0)) != -1)
             {
                 // Read the block, storing it in the buffer.
-                if (bread(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == FALLO) return FALLO;   
+                mi_waitSem();
+                if (bread(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == FALLO) 
+                {
+                    mi_signalSem();
+                    return FALLO;   
+                }
+                mi_signalSem();
             }
             // Add the number of bytes read (BLOCKSIZE) to the total number of bytes read.
             read_bytes += BLOCKSIZE;
@@ -183,8 +261,14 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
         if ((nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 0)) != -1)
         {
+            mi_waitSem();
             // Read the last block where the data is stored.
-            if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
+            if (bread(nbfisico, buf_bloque) == FALLO) 
+            {
+                mi_signalSem();
+                return FALLO;
+            }
+            mi_signalSem();
             // Copy the slice of the block that we want to read to the buffer.
             memcpy(buf_original + read_bytes, buf_bloque, desp2 + 1);
         }
