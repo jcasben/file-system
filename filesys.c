@@ -327,6 +327,19 @@ void fs_cat(char **args)
         fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
         return;
     }
+
+    char file_path[PATHSIZE];
+    strcpy(file_path, path);
+    strcat(file_path, args[1]);
+    args[1] = disk_name;
+    args[2] = file_path;
+    args[3] = NULL;
+    int wstatus;
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execvp("./mi_cat", args);
+    } else if (pid > 0) wait(&wstatus);
 }
 
 void fs_write(char **args)
