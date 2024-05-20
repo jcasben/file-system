@@ -194,7 +194,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             if(bread(nbfisico, buf_bloque) == FALLO)
             {
                 mi_signalSem();
-                return FALLO
+                return FALLO;
             }
             mi_signalSem();
             // Copy the slice of the block that we want to read to the buffer.
