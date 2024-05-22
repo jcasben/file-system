@@ -35,9 +35,27 @@
 
 #define NEGRITA "\x1b[1m"
 
+/// Mounts the virtual disk, opening it and setting the file descriptor.
+/// \param camino path to the virtual disk.
+/// \return the file descriptor of the virtual disk or -1 (FALLO) if an error occurs.
 int bmount(const char *camino);
+/// Unmounts the virtual disk, closing it.
+/// \return 0 (EXITO) if the disk is unmounted successfully, -1 (FALLO)
+/// if an error occurs.
 int bumount();
+/// Writes a block to the virtual device, on the physical block
+/// specified by nbloque.
+/// \param nbloque physical block we want to write.
+/// \param buf buffer with the data we want to write.
+/// \return the number of bytes written (BLOCKSIZE) or -1 (FALLO) if an error occurs.
 int bwrite(unsigned int nbloque, const void *buf);
+/// Reads a block from the virtual device, from the physical block
+/// specified by nbloque.
+/// \param nbloque physical block we want to read.
+/// \param buf buffer where we want to store the data we read.
+/// \return the number of bytes read (BLOCKSIZE) or -1 (FALLO) if an error occurs.
 int bread(unsigned int nbloque, void *buf);
+/// Wrapper for waitSem
 void mi_waitSem();
+/// Wrapper for signalSem
 void mi_signalSem();

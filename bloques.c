@@ -13,9 +13,6 @@ static int fd = 0;
 static unsigned int inside_sc = 0;
 static sem_t *mutex;
 
-/// @brief Mounts the virtual disk, opening it and setting the file descriptor.
-/// @param camino path to the virtual disk.
-/// @return the file descriptor of the virtual disk or -1 (FALLO) if an error occurs.
 int bmount(const char *camino)
 {
     if (!mutex)
@@ -42,9 +39,6 @@ int bmount(const char *camino)
     return fd;
 }
 
-/// @brief Unmounts the virtual disk, closing it.
-/// @return 0 (EXITO) if the disk is unmounted successfully, -1 (FALLO)
-/// if an error occurs.
 int bumount()
 {
     deleteSem();
@@ -57,11 +51,6 @@ int bumount()
     return EXITO;
 }
 
-/// @brief Writes a block to the virtual device, on the physical block
-/// specified by nbloque.
-/// @param nbloque physical block we want to write.
-/// @param buf buffer with the data we want to write.
-/// @return the number of bytes written (BLOCKSIZE) or -1 (FALLO) if an error occurs.
 int bwrite(unsigned int nbloque, const void *buf)
 {
     // Set the pointer to the block we want to write
@@ -80,11 +69,6 @@ int bwrite(unsigned int nbloque, const void *buf)
     return BLOCKSIZE;
 }
 
-/// @brief Reads a block from the virtual device, from the physical block
-/// specified by nbloque.
-/// @param nbloque physical block we want to read.
-/// @param buf buffer where we want to store the data we read.
-/// @return the number of bytes read (BLOCKSIZE) or -1 (FALLO) if an error occurs.
 int bread(unsigned int nbloque, void *buf)
 {
     // Set the pointer to the block we want to read
@@ -102,7 +86,6 @@ int bread(unsigned int nbloque, void *buf)
 
     return BLOCKSIZE;
 }
-
 
 void mi_waitSem()
 {
