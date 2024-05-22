@@ -93,7 +93,7 @@ int buscar_entrada(
     );
 #endif
 
-    leer_inodo(*p_inodo_dir, &inode);
+    if (leer_inodo(*p_inodo_dir, &inode) == FALLO) return FALLO;
     if ((inode.permisos & 4) != 4) return ERROR_PERMISO_LECTURA;
 
     memset(buffer_lec, 0, BLOCKSIZE);
@@ -105,7 +105,7 @@ int buscar_entrada(
         int nbloc = 0;
         int found = 0;
         memset(buffer_lec, 0, BLOCKSIZE);
-        mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
+        if (mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE) == FALLO) return FALLO;
 
         while(entry_inode_number < cant_entries_inode)
         {
@@ -126,7 +126,7 @@ int buscar_entrada(
             if (found == 1) break;
             nbloc++;
             memset(buffer_lec, 0, BLOCKSIZE);
-            mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
+            if (mi_read_f(*p_inodo_dir, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE) == FALLO) return FALLO;
         }
     }
 
@@ -157,7 +157,7 @@ int buscar_entrada(
             {
                 if (strcmp(end, "/") == 0)
                 {
-                    buffer_lec[index].ninodo = reservar_inodo('d', permisos);
+                    if ((buffer_lec[index].ninodo = reservar_inodo('d', permisos)) == FALLO) return FALLO;
 #if DEBUGN7
                     fprintf(
                             stderr,
@@ -175,7 +175,7 @@ int buscar_entrada(
             }
             else
             {
-                buffer_lec[index].ninodo = reservar_inodo('f', permisos);
+                if ((buffer_lec[index].ninodo = reservar_inodo('f', permisos)) == FALLO) return FALLO;
 #if DEBUGN7
                 fprintf(
                         stderr,
@@ -196,7 +196,7 @@ int buscar_entrada(
             {
                 if (buffer_lec[index].ninodo != FALLO)
                 {
-                    liberar_inodo(buffer_lec[index].ninodo);
+                    if (liberar_inodo(buffer_lec[index].ninodo) == FALLO) return FALLO;
                 }
                 return FALLO;
             }
@@ -289,7 +289,7 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
 
     // Read inode with the assigned value of the function buscar_entrada()
     struct inodo inode;
-    leer_inodo(n_inode, &inode);
+    if (leer_inodo(n_inode, &inode) == FALLO) return FALLO;
     unsigned long cant_entries_inode = inode.tamEnBytesLog / sizeof(struct entrada);
     if (inode.tipo != tipo)
     {
@@ -309,7 +309,7 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
         int entry_inode_number = 0;
 
         struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
-        mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
+        if (mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE) == FALLO) return FALLO;
 
         while(entry_inode_number < cant_entries_inode)
         {
@@ -323,12 +323,12 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
             }
             nbloc++;
             memset(buffer_lec, 0, BLOCKSIZE);
-            mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE);
+            if (mi_read_f(n_inode, buffer_lec, nbloc * BLOCKSIZE, BLOCKSIZE) == FALLO) return FALLO;
         }
     } else if (tipo == 'f')
     {
         struct entrada entry;
-        mi_read_f(p_inode_dir, &entry, p_entry * sizeof(struct entrada), sizeof(struct entrada));
+        if (mi_read_f(p_inode_dir,&entry,p_entry * sizeof(struct entrada),sizeof(struct entrada)) == FALLO) return FALLO;
 
         if (flag == 'l')
         {
@@ -410,6 +410,7 @@ int mi_chmod(const char *camino, unsigned char permisos)
         mostrar_error_buscar_entrada(error);
         return FALLO;
     }
+
     return mi_chmod_f(p_inodo, permisos);
 }
 
@@ -437,13 +438,21 @@ int mi_stat(const char *camino, struct STAT *p_stat)
 
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes)
 {
+    mi_waitSem();
+
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
 
     #if USARCACHE==0
         int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-        if (error  < 0) mostrar_error_buscar_entrada(error);
+        if (error  < 0)
+        {
+            mostrar_error_buscar_entrada(error);
+            mi_signalSem();
+            return FALLO;
+        }
+
     #endif
     #if USARCACHE==1
         if (strcmp(UltimaEntradaEscritura.camino, camino) == 0)
@@ -499,6 +508,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             if (error  < 0)
             {
                 mostrar_error_buscar_entrada(error);
+                mi_signalSem();
                 return FALLO;
             }
             #if DEBUGN9
@@ -517,7 +527,13 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     #endif
 
     int written_bytes;
-    if ((written_bytes = mi_write_f(p_inodo, buf, offset, nbytes)) == FALLO) return  0;
+    if ((written_bytes = mi_write_f(p_inodo, buf, offset, nbytes)) == FALLO)
+    {
+        mi_signalSem();
+        return  0;
+    }
+
+    mi_signalSem();
 
     return written_bytes;
 }
@@ -525,40 +541,47 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
 
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes)
 {
+    mi_waitSem();
+
     unsigned int p_inodo_dir = 0;
     unsigned int p_inodo = 0;
     unsigned int p_entrada = 0;
 
     #if USARCACHE==0
         int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-        if (error  < 0) mostrar_error_buscar_entrada(error);
+        if (error  < 0)
+        {
+            mostrar_error_buscar_entrada(error);
+            mi_signalSem();
+            return FALLO;
+        }
     #endif
     #if USARCACHE==1
         if (strcmp(UltimaEntradaLectura.camino, camino) == 0)
-            {
-                p_inodo = UltimaEntradaLectura.p_inodo;
+        {
+            p_inodo = UltimaEntradaLectura.p_inodo;
+            #if DEBUGN9
+                    fprintf(stderr,
+                            BLUE
+                            "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
+                            RESET
+                    );
+            #endif
+        } else {
         #if DEBUGN9
-                fprintf(stderr,
-                        BLUE
-                        "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
-                        RESET
-                );
-        #endif
-            } else {
-    #if DEBUGN9
                 fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
-    #endif
-                int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
-                if (error  < 0) mostrar_error_buscar_entrada(error);
-                strcpy(UltimaEntradaLectura.camino, camino);
-                UltimaEntradaLectura.p_inodo = p_inodo;
-            }
+        #endif
+            int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
+            if (error  < 0) mostrar_error_buscar_entrada(error);
+            strcpy(UltimaEntradaLectura.camino, camino);
+            UltimaEntradaLectura.p_inodo = p_inodo;
+        }
     #endif
     #if (USARCACHE==2 || USARCACHE==3)
         if (initReadCache == 0) {
             initReadCache = 1;
             #if USARCACHE==2
-            readCache.last = 0;
+                readCache.last = 0;
             #endif
             readCache.size = 0;
         }
@@ -566,23 +589,24 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         if(pos >= 0)
         {
             p_inodo = readCache.lastEntries[pos].p_inodo;
-        #if DEBUGN9
-            fprintf(stderr,
-                    BLUE
-                    "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
-                    RESET
-            );
-        #endif
+            #if DEBUGN9
+                fprintf(stderr,
+                        BLUE
+                        "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
+                        RESET
+                );
+            #endif
         }
         else
         {
-        #if DEBUGN9
-            fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
-        #endif
+            #if DEBUGN9
+                fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
+            #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error < 0)
             {
                 mostrar_error_buscar_entrada(error);
+                mi_signalSem();
                 return FALLO;
             }
 
@@ -591,7 +615,13 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     #endif
 
     int read_bytes;
-    if ((read_bytes = mi_read_f(p_inodo, buf, offset, nbytes)) == FALLO) return 0;
+    if ((read_bytes = mi_read_f(p_inodo, buf, offset, nbytes)) == FALLO)
+    {
+        mi_signalSem();
+        return 0;
+    }
+
+    mi_signalSem();
 
     return read_bytes;
 }
@@ -714,10 +744,13 @@ int mi_link(const char *camino1, const char *camino2)
     {
         mostrar_error_buscar_entrada(error);
         mi_signalSem();
-
         return FALLO;
     }
-    leer_inodo(n_inode1, &inode1);
+    if (leer_inodo(n_inode1, &inode1) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
     if((inode1.permisos & 4) != 4)
     {
         fprintf(stderr,
@@ -726,7 +759,6 @@ int mi_link(const char *camino1, const char *camino2)
                 RESET
         );
         mi_signalSem();
-
         return FALLO;
     }
 
@@ -738,21 +770,30 @@ int mi_link(const char *camino1, const char *camino2)
     {
         mostrar_error_buscar_entrada(error);
         mi_signalSem();
-
         return FALLO;
     }
-    mi_signalSem();
 
     struct entrada entry;
-    if (mi_read_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) return FALLO;
+    if (mi_read_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
 
     unsigned int inode_to_delete = entry.ninodo;
     entry.ninodo = n_inode1;
 
-    if (mi_write_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO) return FALLO;
+    if (mi_write_f(p_inode_dir2, &entry, p_entry2 * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
     
-    mi_waitSem();
-    liberar_inodo(inode_to_delete);
+    if (liberar_inodo(inode_to_delete) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
     
     inode1.nlinks = inode1.nlinks + 1;
     inode1.ctime = time(NULL);
@@ -762,6 +803,7 @@ int mi_link(const char *camino1, const char *camino2)
         mi_signalSem();
         return FALLO;
     }
+
     mi_signalSem();
 
     return EXITO;
@@ -769,6 +811,8 @@ int mi_link(const char *camino1, const char *camino2)
 
 int mi_unlink(const char *camino)
 {
+    mi_waitSem();
+
     unsigned int p_inode_dir = 0;
     unsigned int n_inode = 0;
     unsigned int p_entry = 0;
@@ -776,44 +820,86 @@ int mi_unlink(const char *camino)
     int error = buscar_entrada(camino, &p_inode_dir, &n_inode, &p_entry, 0, 6);
     if (error < 0)
     {
-        mostrar_error_buscar_entrada(error);        
+        mostrar_error_buscar_entrada(error);
+        mi_signalSem();
         return FALLO;
     }
 
     struct entrada entry;
-    mi_read_f(p_inode_dir, &entry, p_entry * sizeof(struct entrada), sizeof(struct entrada));
+    if (mi_read_f(p_inode_dir, &entry, p_entry * sizeof(struct entrada), sizeof(struct entrada)) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
 
-    mi_waitSem();
     struct inodo inode_entry;
-    leer_inodo(entry.ninodo, &inode_entry);
+    if (leer_inodo(entry.ninodo, &inode_entry) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
     if (inode_entry.tipo == 'd' && inode_entry.tamEnBytesLog > 0)
     {
         fprintf(stderr, RED "ERROR: can not delete not empty directory" RESET);
         mi_signalSem();
-
         return FALLO;
     }
 
     struct inodo inode_dir;
-    leer_inodo(p_inode_dir, &inode_dir);
+    if (leer_inodo(p_inode_dir, &inode_dir) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
     unsigned int cant_entries_dir = inode_dir.tamEnBytesLog / sizeof(struct entrada);
     if (p_entry == cant_entries_dir - 1)
-        mi_truncar_f(p_inode_dir, inode_dir.tamEnBytesLog - sizeof(struct entrada));
+    {
+        if (mi_truncar_f(p_inode_dir, inode_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+    }
     else
     {
         struct entrada last_entry;
-        mi_read_f(p_inode_dir, &last_entry, (cant_entries_dir - 1) * sizeof(struct entrada), sizeof(struct entrada));
-        mi_write_f(p_inode_dir, &last_entry, p_entry * sizeof(struct entrada), sizeof(struct entrada));
-        mi_truncar_f(p_inode_dir, inode_dir.tamEnBytesLog - sizeof(struct entrada));
+        if (mi_read_f(p_inode_dir,&last_entry,(cant_entries_dir - 1) * sizeof(struct entrada),sizeof(struct entrada)) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        if (mi_write_f(p_inode_dir,&last_entry,p_entry * sizeof(struct entrada),sizeof(struct entrada)) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+        if (mi_truncar_f(p_inode_dir,inode_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
     }
 
     inode_entry.nlinks = inode_entry.nlinks - 1;
-    if (inode_entry.nlinks == 0) liberar_inodo(entry.ninodo);
+    if (inode_entry.nlinks == 0)
+    {
+        if (liberar_inodo(entry.ninodo) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
+    }
     else
     {
         inode_entry.ctime = time(NULL);
-        escribir_inodo(entry.ninodo, &inode_entry);
+        if (escribir_inodo(entry.ninodo, &inode_entry) == FALLO)
+        {
+            mi_signalSem();
+            return FALLO;
+        }
     }
+
+    mi_signalSem();
 
     return EXITO;
 }
