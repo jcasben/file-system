@@ -15,7 +15,10 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
     // Get the specified inode.
     struct inodo inode;
+    mi_waitSem(); // CRITICAL SECTION -----------------------------------
     leer_inodo(ninodo, &inode);
+    mi_signalSem(); // CRITICAL SECTION ---------------------------------
+
     // Look if the inode has the right writing permissions.
     if ((inode.permisos & 2) != 2)
     {
@@ -31,92 +34,67 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     // Treat the case in which the buffer fits inside 1 block.
     if (primerBL == ultimoBL)
     {
-        mi_waitSem();
-        int nbfisico = traducir_bloque_inodo(&inode, primerBL, 1);
+        mi_waitSem(); // CRITICAL SECTION -----------------------------------
+        int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
+        mi_signalSem(); // CRITICAL SECTION ---------------------------------
+
         char buf_bloque[BLOCKSIZE];
-        if (bread(nbfisico, buf_bloque) == FALLO)
-        {
-            mi_signalSem();
-            return FALLO;
-        }
-        mi_signalSem();
+        if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
 
         // Copy the new data of buf_original to the buffer that contains
         // the data of the block that we read. Then, write the updated block.       
         memcpy(buf_bloque + desp1, buf_original, nbytes);
-
-        mi_waitSem();
-        if (bwrite(nbfisico, buf_bloque) == FALLO) 
-        {
-            mi_signalSem();
-            return FALLO;
-        }
-        mi_signalSem();
+        if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
         written_bytes = nbytes;
     }
     // Case where the writing affects to more than 1 block.
     else
     {
         // FASE 1: First logical block
-        mi_waitSem();
-        int nbfisico = traducir_bloque_inodo(&inode, primerBL, 1);
+        mi_waitSem(); // CRITICAL SECTION -----------------------------------
+        int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 1);
+        mi_signalSem(); // CRITICAL SECTION ---------------------------------
+
         char buf_bloque[BLOCKSIZE];
-        if (bread(nbfisico, buf_bloque) == FALLO)
-        {
-            mi_signalSem();
-            return FALLO;
-        }
-        mi_signalSem();
+        if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
 
         // Copy the bytes that belong to the first block to the buffer
         //that contains the data of the block.
         memcpy(buf_bloque + desp1, buf_original, BLOCKSIZE - desp1);
-
-        mi_waitSem();
-        if (bwrite(nbfisico, buf_bloque) == FALLO) 
-        {
-            mi_signalSem();
-            return FALLO;
-        }
-        mi_signalSem();
+        if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
 
         written_bytes += BLOCKSIZE - desp1;
         // FASE 2: Intermediate logical blocks.
         for (size_t i = primerBL + 1; i < ultimoBL; i++)
         {
-            mi_waitSem();
-            
-            nbfisico = traducir_bloque_inodo(&inode, i, 1);
-            if ((written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE)) == FALLO)
-            {
-                mi_signalSem();
-                return FALLO;
-            }
+            mi_waitSem(); // CRITICAL SECTION -----------------------------------
+            nbfisico = traducir_bloque_inodo(ninodo, i, 1);
+            mi_signalSem(); // CRITICAL SECTION ---------------------------------
 
-            mi_signalSem();
+            if ((written_bytes += bwrite(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE)) == FALLO)
+                return FALLO;
         }
         
         // FASE 3: Last logical block.
-        mi_waitSem();
-        nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 1);
-        if (bread(nbfisico, buf_bloque) == FALLO)
-        {
-            mi_signalSem();
-            return FALLO;
-        }
-        mi_signalSem();
-        
+        mi_waitSem(); // CRITICAL SECTION -----------------------------------
+        nbfisico = traducir_bloque_inodo(ninodo, ultimoBL, 1);
+        mi_signalSem(); // CRITICAL SECTION ---------------------------------
+
+        if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
         memcpy(buf_bloque, buf_original + (nbytes - (desp2 + 1)), desp2 + 1);
 
-        mi_waitSem();
-        if (bwrite(nbfisico, buf_bloque) == FALLO)
-        {
-            mi_signalSem();
-            return FALLO;
-        }
-        mi_signalSem();
-
+        if (bwrite(nbfisico, buf_bloque) == FALLO) return FALLO;
         written_bytes += desp2 + 1;
+    }
+
+    // Reset the content of inode
+    memset(&inode, 0, sizeof(struct inodo));
+
+    mi_waitSem(); // CRITICAL SECTION -----------------------------------
+    if (leer_inodo(ninodo, &inode) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
     }
     // If we have written further than the end of the file
     // update tamEnBytesLog.
@@ -127,14 +105,13 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     }
     inode.mtime = time(NULL);
 
-    mi_waitSem();
     if (escribir_inodo(ninodo, &inode) == FALLO)
     {
         mi_signalSem();
         return FALLO;
     }
-    mi_signalSem();
-    
+    mi_signalSem(); // CRITICAL SECTION ---------------------------------
+
     return written_bytes;
 } 
 
@@ -143,8 +120,21 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     int read_bytes = 0;
 
     // Get the specified inode.
+    mi_waitSem(); // CRITICAL SECTION -----------------------------------
     struct inodo inode;
-    leer_inodo(ninodo, &inode);
+    if (leer_inodo(ninodo, &inode) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
+    inode.atime = time(NULL);
+    if (escribir_inodo(ninodo, &inode) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
+    mi_signalSem(); // CRITICAL SECTION ---------------------------------
+
     // Look if the inode has the right reading permissions.
     if ((inode.permisos & 4) != 4) 
     {
@@ -159,10 +149,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     // If we want to read more bytes than the file has, we read from offset to the end of the file.
     // So we modify the nbytes to read.
-    if ((offset + nbytes) >= inode.tamEnBytesLog)
-    {
-        nbytes = inode.tamEnBytesLog - offset;
-    }
+    if ((offset + nbytes) >= inode.tamEnBytesLog) nbytes = inode.tamEnBytesLog - offset;
 
     unsigned int primerBL = (offset / (unsigned) BLOCKSIZE);
     unsigned int ultimoBL = (offset + nbytes - 1) / (unsigned) BLOCKSIZE;
@@ -171,22 +158,15 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     if(primerBL == ultimoBL)
     {
-        int nbfisico = traducir_bloque_inodo(&inode, primerBL, 0);
+        int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
         
         if (nbfisico != -1)
         {
             char buf_bloque[BLOCKSIZE];
-            mi_waitSem();
             // Read the block where the data is stored.
-            if(bread(nbfisico, buf_bloque) == FALLO)
-            {
-                mi_signalSem();
-                return FALLO;
-            }
-            mi_signalSem();
+            if(bread(nbfisico, buf_bloque) == FALLO) return FALLO;
             // Copy the slice of the block that we want to read to the buffer.
             memcpy(buf_original, buf_bloque + desp1, nbytes);
-            
             // Return the number of bytes read.
             return nbytes;
         } 
@@ -195,31 +175,21 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             // If the block is not allocated, we dont change the
             // buffer (because it is full of 0's) and return nbytes
             // as the number of bytes read.
-            mi_signalSem();
             return nbytes;
         }
-
     }
     // Case where the reading affects to more than 1 block.
     else
     {
         // FASE 1: First logical block (the important info is BLOCSIZE - desp1)
-        int nbfisico = traducir_bloque_inodo(&inode, primerBL, 0);
-        
+        int nbfisico = traducir_bloque_inodo(ninodo, primerBL, 0);
         // Buffer that we will use to read the slize of the fist and last block.
         char buf_bloque[BLOCKSIZE];
         
         // If the block doesn't exist, we don't read it.
         if (nbfisico != -1)
         {
-            mi_waitSem();
-            if (bread(nbfisico, buf_bloque) == FALLO) 
-            {
-                mi_signalSem();
-                return FALLO;
-            }
-            mi_signalSem();
-
+            if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
             memcpy(buf_original, buf_bloque + desp1, BLOCKSIZE - desp1);   
         }
         
@@ -229,16 +199,10 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         // FASE 2: Intermediate logical blocks (all the block is info that we want to read).
         for (size_t i = primerBL + 1; i < ultimoBL; i++)
         {
-            if ((nbfisico = traducir_bloque_inodo(&inode, i, 0)) != -1)
+            if ((nbfisico = traducir_bloque_inodo(ninodo, i, 0)) != -1)
             {
                 // Read the block, storing it in the buffer.
-                mi_waitSem();
-                if (bread(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == FALLO) 
-                {
-                    mi_signalSem();
-                    return FALLO;   
-                }
-                mi_signalSem();
+                if (bread(nbfisico, buf_original + (BLOCKSIZE - desp1) + (i - primerBL - 1) * BLOCKSIZE) == FALLO) return FALLO;
             }
             // Add the number of bytes read (BLOCKSIZE) to the total number of bytes read.
             read_bytes += BLOCKSIZE;
@@ -246,16 +210,10 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         
         // FASE 3: Last logical block.
 
-        if ((nbfisico = traducir_bloque_inodo(&inode, ultimoBL, 0)) != -1)
+        if ((nbfisico = traducir_bloque_inodo(ninodo, ultimoBL, 0)) != -1)
         {
-            mi_waitSem();
             // Read the last block where the data is stored.
-            if (bread(nbfisico, buf_bloque) == FALLO) 
-            {
-                mi_signalSem();
-                return FALLO;
-            }
-            mi_signalSem();
+            if (bread(nbfisico, buf_bloque) == FALLO) return FALLO;
             // Copy the slice of the block that we want to read to the buffer.
             memcpy(buf_original + read_bytes, buf_bloque, desp2 + 1);
         }
@@ -285,11 +243,21 @@ int mi_stat_f(unsigned int ninodo, struct STAT *p_stat)
 
 int mi_chmod_f(unsigned int ninodo, unsigned char permisos)
 {
+    mi_waitSem();
     struct inodo inode;
-    if(leer_inodo(ninodo, &inode) == FALLO) return FALLO;
+    if(leer_inodo(ninodo, &inode) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
     inode.permisos = permisos;
     inode.ctime = time(NULL);
-    if(escribir_inodo(ninodo, &inode) == FALLO) return FALLO;
+    if(escribir_inodo(ninodo, &inode) == FALLO)
+    {
+        mi_signalSem();
+        return FALLO;
+    }
+    mi_signalSem();
 
     return EXITO;
 }
