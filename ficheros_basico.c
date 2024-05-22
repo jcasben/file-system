@@ -415,11 +415,13 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros)
     return FALLO;
 }
 
-int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned char reservar)
+int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar)
 {
+    struct inodo inodo;
+    if (leer_inodo(ninodo, &inodo) == FALLO) return FALLO;
     unsigned int ptr = 0;
     unsigned int ptr_ant = 0;
-    int nRangoBL = obtener_nRangoBL(inodo, nblogico, &ptr);
+    int nRangoBL = obtener_nRangoBL(&inodo, nblogico, &ptr);
     int nivel_punteros = nRangoBL;
     int indice;
     unsigned int buffer[NPUNTEROS];
@@ -433,11 +435,11 @@ int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned c
             {
                 ptr = reservar_bloque();
                 
-                inodo->numBloquesOcupados++;
-                inodo->ctime = time(NULL);
+                inodo.numBloquesOcupados++;
+                inodo.ctime = time(NULL);
                 if (nivel_punteros == nRangoBL)
                 {
-                    inodo->punterosIndirectos[nRangoBL - 1] = ptr;
+                    inodo.punterosIndirectos[nRangoBL - 1] = ptr;
                     #if DEBUGN5
                         fprintf(
                             stderr, 
@@ -481,12 +483,12 @@ int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned c
         {
             ptr = reservar_bloque();
             
-            inodo->numBloquesOcupados++;
-            inodo->ctime = time(NULL);
+            inodo.numBloquesOcupados++;
+            inodo.ctime = time(NULL);
 
             if (nRangoBL == 0)
             {
-                inodo->punterosDirectos[nblogico] = ptr;
+                inodo.punterosDirectos[nblogico] = ptr;
                 #if DEBUGN5
                     fprintf(stderr,
                         GRAY 
@@ -513,6 +515,8 @@ int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned c
             }
         }
     }
+
+    if (escribir_inodo(ninodo, &inodo) == FALLO) return FALLO;
 
     return ptr;
 }

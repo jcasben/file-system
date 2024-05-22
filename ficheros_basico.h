@@ -154,7 +154,7 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros);
 /// if 1 -> the function is used to consult if the physical block exists and to
 /// reserve a physical block. If the physical block exists, it returns its position.
 /// If it doesn't exist, it reserves memory for it and returns its position.
-int traducir_bloque_inodo(struct inodo *inodo, unsigned int nblogico, unsigned char reservar);
+int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, unsigned char reservar);
 /// Frees an inode given its number
 /// \param ninodo number of the inode to be freed
 /// \return the number of the freed inode; FALLO otherwise
