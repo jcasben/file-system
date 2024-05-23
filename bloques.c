@@ -15,6 +15,7 @@ static sem_t *mutex;
 
 int bmount(const char *camino)
 {
+
     if (!mutex)
     {
         mutex = initSem();
@@ -29,6 +30,7 @@ int bmount(const char *camino)
 
     // Using umask for giving the right permissions to the file
     umask(000);
+    if (fd > 0) close(fd);
     fd = open(camino, O_RDWR | O_CREAT, 0666);
     if (fd < 0)
     {
@@ -42,7 +44,7 @@ int bmount(const char *camino)
 int bumount()
 {
     deleteSem();
-    if (close(fd) < 0)
+    if ((fd = close(fd)) < 0)
     {
         perror(RED "ERROR" RESET);
         return FALLO;
