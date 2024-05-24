@@ -38,7 +38,7 @@ int main(int argc, char **args) {
 
             snprintf(nombre_directorio_hijo, sizeof(nombre_directorio), "/simul_%04d%02d%02d%02d%02d%02d/proceso_%d/",
                      t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-                     t->tm_hour, t->tm_min, t->tm_sec, pid);
+                     t->tm_hour, t->tm_min, t->tm_sec, getpid());
 
             if(mi_creat(nombre_directorio, 7) < 0) return FALLO;
 
