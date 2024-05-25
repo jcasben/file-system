@@ -17,12 +17,12 @@ int main(int argc, char **args) {
     if (bmount(args[1]) < 0) return FALLO;
 
     signal(SIGCHLD, reaper);
-    char nombre_directorio[TAMNOMBRE];
+    char nombre_directorio[32];
     struct timeval tv;
     gettimeofday(&tv, NULL);
     struct tm *t = localtime(&tv.tv_sec);
 
-    snprintf(nombre_directorio, sizeof(nombre_directorio), "/simul_%04d%02d%02d%02d%02d%02d/",
+    sprintf(nombre_directorio, "/simul_%04d%02d%02d%02d%02d%02d/",
              t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
              t->tm_hour, t->tm_min, t->tm_sec);
 
@@ -34,18 +34,14 @@ int main(int argc, char **args) {
         {
             if(bmount(args[1]) < 0) return FALLO;
 
-            char nombre_directorio_hijo[TAMNOMBRE];
+            char nombre_directorio_hijo[64];
+            sprintf(nombre_directorio_hijo, "%sproceso_%d/", nombre_directorio, getpid());
+            printf("primer %s\n", nombre_directorio_hijo);
+            if(mi_creat(nombre_directorio_hijo, 7) < 0) return FALLO;
 
-            snprintf(nombre_directorio_hijo, sizeof(nombre_directorio), "/simul_%04d%02d%02d%02d%02d%02d/proceso_%d/",
-                     t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-                     t->tm_hour, t->tm_min, t->tm_sec, getpid());
-
-            if(mi_creat(nombre_directorio, 7) < 0) return FALLO;
-
-            char ruta_fichero[TAMNOMBRE];
-            char nombre_fichero[] = "prueba.dat";
-            snprintf(ruta_fichero, sizeof(ruta_fichero) + sizeof(nombre_fichero), "%s%s", nombre_directorio_hijo, nombre_fichero);
-            printf("Ruta fichero: %s\n", ruta_fichero);
+            char ruta_fichero[128];
+            sprintf(ruta_fichero, "%sprueba.dat", nombre_directorio_hijo);
+            printf("segundo %s\n", ruta_fichero);
             if(mi_creat(ruta_fichero, 6) < 0) return FALLO;
 
             srand(time(NULL) + getpid());
