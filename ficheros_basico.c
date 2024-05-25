@@ -333,22 +333,31 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos)
     // Modify the position of the first free inode and save the
     // position of the first free inode
     int posInodoReservado = SB.posPrimerInodoLibre;
-    SB.posPrimerInodoLibre = SB.posPrimerInodoLibre + 1;
+    struct inodo inode;
+    if (leer_inodo(posInodoReservado, &inode) == FALLO) return FALLO;
+    SB.posPrimerInodoLibre = inode.punterosDirectos[0];
 
-    // Initialize the new inode
-    struct inodo new_inode = {
-        tipo : tipo,
-        permisos : permisos,
-        nlinks : 1,
-        tamEnBytesLog : 0,
-        atime : time(NULL),
-        mtime : time(NULL),
-        ctime : time(NULL),
-        numBloquesOcupados : 0,
-    };
+    inode.tipo = tipo;
+    inode.permisos = permisos;
+    inode.nlinks = 1;
+    inode.tamEnBytesLog = 0;
+    inode.atime = time(NULL);
+    inode.mtime = time(NULL);
+    inode.ctime = time(NULL);
+    inode.numBloquesOcupados = 0;
+
+    // Initialize the pointers to direct blocks
+    for (int i = 0; i < DIRECTOS; ++i) {
+        inode.punterosDirectos[i] = 0;
+    }
+
+    // Initialize the pointers to indirect blocks
+    for (int i = 0; i < 3; ++i) {
+        inode.punterosIndirectos[i] = 0;
+    }
 
     // Write the new inode to the disk
-    if (escribir_inodo(posInodoReservado, &new_inode) == FALLO) return FALLO;
+    if (escribir_inodo(posInodoReservado, &inode) == FALLO) return FALLO;
 
     // Update the cantInodosLibres at the superblock and rewrite it.
     SB.cantInodosLibres = SB.cantInodosLibres - 1;
