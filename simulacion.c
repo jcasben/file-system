@@ -1,6 +1,9 @@
 #include "simulacion.h"
 
 static int acabados = 0;
+char nombre_directorio[88];
+
+#define DEBUGN12 0
 
 int main(int argc, char **args) {
     if (argc != 2)
@@ -17,7 +20,6 @@ int main(int argc, char **args) {
     if (bmount(args[1]) < 0) return FALLO;
 
     signal(SIGCHLD, reaper);
-    char nombre_directorio[88];
     struct timeval tv;
     gettimeofday(&tv, NULL);
     struct tm *t = localtime(&tv.tv_sec);
@@ -69,9 +71,19 @@ int main(int argc, char **args) {
 
 void reaper()
 {
+    pid_t ended;
     signal(SIGCHLD, reaper);
-    while (waitpid(-1, NULL, WNOHANG) > 0)
+    while ((ended = waitpid(-1, NULL, WNOHANG) > 0))
     {
         acabados++;
+        #if DEBUGN11
+            fprintf(
+                stderr,
+                GRAY
+                "[Proceso %d: Completadas 50 escrituras en %sproceso_%d/prueba.dat]\n"
+                RESET,
+                acabados, nombre_directorio, ended
+            );
+        #endif
     }
 }
