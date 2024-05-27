@@ -35,11 +35,13 @@ int main(int argc, char **args) {
             if(bmount(args[1]) < 0) return FALLO;
 
             char nombre_directorio_hijo[64];
+            memset(nombre_directorio_hijo, 0, sizeof(nombre_directorio_hijo));
             sprintf(nombre_directorio_hijo, "%sproceso_%d/", nombre_directorio, getpid());
             printf("primer %s\n", nombre_directorio_hijo);
             if(mi_creat(nombre_directorio_hijo, 7) < 0) return FALLO;
 
             char ruta_fichero[128];
+            memset(ruta_fichero, 0, sizeof(ruta_fichero));
             sprintf(ruta_fichero, "%sprueba.dat", nombre_directorio_hijo);
             printf("segundo %s\n", ruta_fichero);
             if(mi_creat(ruta_fichero, 6) < 0) return FALLO;
@@ -60,6 +62,10 @@ int main(int argc, char **args) {
             exit(0);
         }
         my_sleep(150);
+    }
+
+    while (acabados < NUMPROCESOS) {
+        pause();
     }
 
     if (bumount() < 0) return FALLO;
