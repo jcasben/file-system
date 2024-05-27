@@ -8,3 +8,5 @@ struct INFORMACION {
     struct REGISTRO MenorPosicion;
     struct REGISTRO MayorPosicion;
 };
+
+int read_subdirectories(const char *camino, struct entrada *entradas, int *num_entradas);
