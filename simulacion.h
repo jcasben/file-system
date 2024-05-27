@@ -14,7 +14,3 @@ struct REGISTRO { //sizeof(struct REGISTRO): 24 bytes
 };
 
 void reaper();
-void my_sleep(unsigned msec);
-
-
-
