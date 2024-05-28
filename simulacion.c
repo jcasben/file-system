@@ -56,14 +56,16 @@ int main(int argc, char **args) {
             {
                 struct REGISTRO registro;
                 registro.fecha = time(NULL);
+                fprintf(stdin, BLUE"%s"RESET, asctime((const struct tm *) registro.fecha));
+                //printf("%s\n", asctime((const struct tm *) registro.fecha));
+
                 registro.pid = getpid();
                 registro.nEscritura = nscritura;
                 registro.nRegistro = rand() % REGMAX;
 
                 mi_write(ruta_fichero, &registro, registro.nRegistro * sizeof(struct REGISTRO), sizeof(struct REGISTRO));
+                usleep(50000);
             }
-            usleep(50000);
-
             if(bumount() < 0) return FALLO;
             exit(0);
         }

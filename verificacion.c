@@ -17,6 +17,7 @@ int main(int argc, char **args)
             "ERROR: invalid syntax. Usage: ./verificacion <nombre_dispositivo> <directorio_simulación>\n"
             RESET
         );
+        return FALLO;
     }
 
     if (bmount(args[1]) < 0) return FALLO;
@@ -24,9 +25,9 @@ int main(int argc, char **args)
     char file[TAMNOMBRE+20];
     strcpy(file, args[2]);
     struct STAT stat;
-    if(mi_stat(file, &stat)< 0 ) return FALLO;
+    if(mi_stat(file, &stat) < 0) return FALLO;
 
-    int num_entradas = stat.tamEnBytesLog/ sizeof(struct entrada);
+    int num_entradas = stat.tamEnBytesLog / sizeof(struct entrada);
     if(num_entradas != NUMPROCESOS) return FALLO;
 
     char ruta[128];
@@ -34,25 +35,28 @@ int main(int argc, char **args)
     if((mi_creat(ruta, 7)) < 0) return FALLO;
 
     struct entrada entradas[num_entradas];
-    mi_read(ruta, entradas, 0, num_entradas * sizeof (struct entrada));
+    mi_read(file, entradas, 0, num_entradas * sizeof (struct entrada));
 
     unsigned int index = 0;
-    struct INFORMACION info;
     struct entrada directorio;
 
-    unsigned int escrituras_validadas = 0;
+    unsigned int escrituras_validadas;
     int cant_registros_buffer_escrituras = 256;
     struct REGISTRO buffer_escrituras [cant_registros_buffer_escrituras];
-    memset(buffer_escrituras, 0, sizeof(buffer_escrituras));
+
     struct REGISTRO registro_actual;
     while (index < num_entradas)
     {
+        struct INFORMACION info;
+        char file_buffer[256];
         directorio = entradas[index];
-        sprintf(file, "%s%sprueba.dat", file, directorio.nombre);
-        info.pid = atoi(strchr(directorio.nombre, '_') + 1);
+        sprintf(file_buffer, "%s%s/prueba.dat", file, directorio.nombre);
+        info.pid = (pid_t) atoi(strchr(directorio.nombre, '_') + 1);
+        memset(buffer_escrituras, 0, sizeof(buffer_escrituras));
 
+        escrituras_validadas = 0;
         unsigned int blocks = 0;
-        while (mi_read(file, buffer_escrituras, blocks * sizeof(buffer_escrituras), sizeof(buffer_escrituras)) > 0)
+        while (mi_read(file_buffer, buffer_escrituras, blocks * sizeof(buffer_escrituras), sizeof(buffer_escrituras)) > 0)
         {
             for (int i = 0; i < cant_registros_buffer_escrituras; ++i) {
                 memcpy(&registro_actual, &buffer_escrituras[i], sizeof(struct REGISTRO));
@@ -60,7 +64,7 @@ int main(int argc, char **args)
                 {
                     if(escrituras_validadas == 0)
                     {
-                        // Actualizar info por primera escritura
+                        // Actualizar info la primera vez
                         info.PrimeraEscritura = registro_actual;
                         info.UltimaEscritura = registro_actual;
                         info.MenorPosicion = registro_actual;
@@ -68,6 +72,10 @@ int main(int argc, char **args)
                     }
                     else
                     {
+                        if(info.PrimeraEscritura.nEscritura > registro_actual.nEscritura)
+                        {
+                            info.PrimeraEscritura = registro_actual;
+                        }
                         //Comparar nº de escritura (para obtener primera y última)
                         // y actualizarlas si es preciso
                         if (info.UltimaEscritura.nEscritura < registro_actual.nEscritura)
@@ -82,21 +90,21 @@ int main(int argc, char **args)
                     escrituras_validadas++;
                 }
             }
-            info.nEscrituras = info.nEscrituras + escrituras_validadas;
-            
-            escrituras_validadas = 0;
+            memset(buffer_escrituras, 0, sizeof(buffer_escrituras));
             blocks++;
         }
+
         // Obtener la escritura de la última posición.
         // Añadir la información del struct info al fichero informe.txt por el final.
         char buffer_info[BLOCKSIZE];
+        memset(buffer_info, 0, sizeof(buffer_info));
         sprintf(buffer_info,
             "PID: %d\n"
             "Numero de escrituras: %d\n"
-            "Primera escirtura \t%d\t%d\t%s\n"
-            "Ultima escritura \t%d\t%d\t%s\n"
-            "Menor posicion \t%d\t%d\t%s\n"
-            "Mayor posicion \t%d\t%d\t%s\n",
+            "Primera escritura \t%d\t%d\t%s"
+            "Ultima escritura  \t%d\t%d\t%s"
+            "Menor posicion    \t%d\t%d\t%s"
+            "Mayor posicion    \t%d\t%d\t%s\n",
             info.pid,
             escrituras_validadas,
             info.PrimeraEscritura.nEscritura, info.PrimeraEscritura.nRegistro, asctime(localtime(&info.PrimeraEscritura.fecha)),
@@ -109,13 +117,15 @@ int main(int argc, char **args)
         
         memset(buffer_escrituras, 0, sizeof(buffer_escrituras));
         #if DEBUGN13
-        fprintf(stderr,
-                "[%d) %d escrituras validadas en %s",
-                index,
-                escrituras_validadas,
-                file
-                );
+        fprintf(
+            stderr,
+            "[%d) %d escrituras validadas en %s\n",
+            index,
+            escrituras_validadas,
+            file_buffer
+        );
         #endif
+
         index++;
     }
 
