@@ -1,7 +1,5 @@
 #include "verificacion.h"
 
-#define DEBUG13 1
-
 int main(int argc, char **args)
 {
     if (argc != 3)

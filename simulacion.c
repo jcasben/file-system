@@ -3,8 +3,6 @@
 static int acabados = 0;
 char nombre_directorio[88];
 
-#define DEBUGN12 0
-
 int main(int argc, char **args) {
     if (argc != 2)
     {
@@ -76,7 +74,7 @@ void reaper()
     while ((ended = waitpid(-1, NULL, WNOHANG) > 0))
     {
         acabados++;
-        #if DEBUGN11
+        #if DEBUGN12
             fprintf(
                 stderr,
                 GRAY

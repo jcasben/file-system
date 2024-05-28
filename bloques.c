@@ -107,5 +107,4 @@ void mi_signalSem()
     {
         signalSem(mutex);
     }
-    
 }

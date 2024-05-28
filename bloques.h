@@ -35,6 +35,13 @@
 
 #define NEGRITA "\x1b[1m"
 
+#define DEBUGN5 0
+#define DEBUGN6 0
+#define DEBUGN7 0
+#define DEBUGN9 0
+#define DEBUGN12 0
+#define DEBUGN13 1
+
 /// Mounts the virtual disk, opening it and setting the file descriptor.
 /// \param camino path to the virtual disk.
 /// \return the file descriptor of the virtual disk or -1 (FALLO) if an error occurs.
