@@ -1,3 +1,10 @@
+/*
+    Autores:
+        - Marc Link Cladera
+        - Carlos Gálvez Mena
+        - Jesús Castillo Benito
+*/
+
 #include "verificacion.h"
 
 int main(int argc, char **args)
@@ -101,7 +108,7 @@ int main(int argc, char **args)
         mi_write(ruta, buffer_info, index * sizeof(buffer_info), sizeof(buffer_info));
         
         memset(buffer_escrituras, 0, sizeof(buffer_escrituras));
-        #if DEBUG13
+        #if DEBUGN13
         fprintf(stderr,
                 "[%d) %d escrituras validadas en %s",
                 index,
@@ -111,7 +118,6 @@ int main(int argc, char **args)
         #endif
         index++;
     }
-    
 
     if(bumount() < 0) return FALLO;
 

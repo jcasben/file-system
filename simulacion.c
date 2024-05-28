@@ -1,3 +1,10 @@
+/*
+    Autores:
+        - Marc Link Cladera
+        - Carlos Gálvez Mena
+        - Jesús Castillo Benito
+*/
+
 #include "simulacion.h"
 
 static int acabados = 0;
