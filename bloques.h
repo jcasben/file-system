@@ -41,6 +41,7 @@
 #define DEBUGN9 0
 #define DEBUGN12 0
 #define DEBUGN13 1
+#define DEBUGMMAP 0
 
 /// Mounts the virtual disk, opening it and setting the file descriptor.
 /// \param camino path to the virtual disk.

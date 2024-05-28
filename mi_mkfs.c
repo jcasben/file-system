@@ -16,6 +16,14 @@ int main(int argc, char **argv)
         return FALLO;
     }
 
+    #if DEBUGMMAP
+        unsigned int finDV = atoi(argv[2]) * BLOCKSIZE - 1;
+        FILE *fp = fopen(argv[1], "w");
+        fseek(fp, finDV, SEEK_SET);
+        fputc('\0', fp);
+        fclose(fp);
+    #endif
+
     // Mounting the device with bmount(<device_name>).
     if (bmount(argv[1]) < 0) return FALLO;
 
