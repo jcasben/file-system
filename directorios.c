@@ -677,6 +677,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         {
             if(cache->lastEntries[cache->last % CACHE_SIZE].a == 0)
             {
+                memset(cache->lastEntries[cache->last % CACHE_SIZE].camino, 0, TAMNOMBRE*PROFUNDIDAD);
                 strcpy(cache->lastEntries[cache->last % CACHE_SIZE].camino, camino);
                 cache->lastEntries[cache->last % CACHE_SIZE].p_inodo = *p_inodo;
                 cache->lastEntries[cache->last % CACHE_SIZE].a = 1;
@@ -690,8 +691,13 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                     cache->lastEntries[cache->last % CACHE_SIZE].a = 0;
                     cache->last++;
                 } while(cache->lastEntries[cache->last % CACHE_SIZE].a == 1);
-                
+
+                memset(cache->lastEntries[cache->last % CACHE_SIZE].camino, 0, TAMNOMBRE*PROFUNDIDAD);
+                strcpy(cache->lastEntries[cache->last % CACHE_SIZE].camino, camino);
+                cache->lastEntries[cache->last % CACHE_SIZE].p_inodo = *p_inodo;
+                cache->lastEntries[cache->last % CACHE_SIZE].a = 1;
                 pos = cache->last % CACHE_SIZE;
+                cache->last++;
             }
         }
 
