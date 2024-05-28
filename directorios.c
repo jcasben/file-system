@@ -7,9 +7,6 @@
 
 #include "directorios.h"
 
-#define DEBUGN7 0
-#define DEBUGN9 0
-
 #if USARCACHE==1
     static struct UltimaEntrada UltimaEntradaEscritura;
     static struct UltimaEntrada UltimaEntradaLectura;
@@ -671,7 +668,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             cache->lastEntries[cache->size].a = 1;
             pos = cache->size;
             cache->size++;
-            cache->last = cache->size % CACHE_SIZE;
+            cache->last = cache->size;
         }
         else
         {
