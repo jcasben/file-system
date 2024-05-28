@@ -448,22 +448,31 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         if (strcmp(UltimaEntradaEscritura.camino, camino) == 0)
         {
             p_inodo = UltimaEntradaEscritura.p_inodo;
-        #if DEBUGN9
-            fprintf(stderr,
-                    BLUE
-                    "[mi_write() -> Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n"
-                    RESET
-            );
-        #endif
+                #if DEBUGN9
+                fprintf(
+                    stderr, 
+                    ORANGE 
+                    "[mi_write() → Utilizamos última escritura: %s]\n" 
+                    RESET, 
+                    UltimaEntradaEscritura.camino
+                );
+            #endif
+
         } else
         {
-        #if DEBUGN9
-            fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
-        #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error  < 0) mostrar_error_buscar_entrada(error);
             strcpy(UltimaEntradaEscritura.camino, camino);
             UltimaEntradaEscritura.p_inodo = p_inodo;
+             #if DEBUGN9
+                fprintf(
+                    stderr, 
+                    ORANGE 
+                    "[mi_write() → Actualizamos última escritura: %s]\n" 
+                    RESET, 
+                    UltimaEntradaEscritura.camino
+                );
+            #endif
         }
     #endif
     #if (USARCACHE==2 || USARCACHE==3)
@@ -480,15 +489,10 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
             p_inodo = writeCache.lastEntries[pos].p_inodo;
             #if DEBUGN9
                 fprintf(stderr,
-                        BLUE
-                        "[mi_write() -> Utilizamos la caché de escritura en vez de llamar a buscar_entrada()]\n"
-                        RESET
-                );
-                fprintf(stderr,
-                        BLUE
-                        "[mi_write() -> Utilizamos cache[%d]: %s]\n"
-                        RESET,
-                        pos, writeCache.lastEntries[pos].camino
+                    BLUE
+                    "[mi_write() -> Utilizamos cache[%d]: %s]\n"
+                    RESET,
+                    pos, writeCache.lastEntries[pos].camino
                 );
             #endif
         }
@@ -501,16 +505,13 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
                 mi_signalSem();
                 return FALLO;
             }
-            #if DEBUGN9
-                fprintf(stderr, ORANGE "[mi_write() → Actualizamos la caché de escritura]" RESET "\n");
-            #endif
             unsigned int posc = updateCache(&writeCache, camino, &p_inodo);
             #if DEBUGN9
                 fprintf(
-                        stderr,
-                        ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n"
-                        RESET,
-                        posc, camino
+                    stderr,
+                    ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n"
+                    RESET,
+                    posc, camino
                 );
             #endif
         }
@@ -551,20 +552,28 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         {
             p_inodo = UltimaEntradaLectura.p_inodo;
             #if DEBUGN9
-                    fprintf(stderr,
-                            BLUE
-                            "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
-                            RESET
+                    fprintf(
+                        stderr,
+                        BLUE
+                        "\n[mi_read() -> Utilizamos última lectura: %s]\n"
+                        RESET,
+                        UltimaEntradaLectura.camino
                     );
             #endif
         } else {
-        #if DEBUGN9
-                fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
-        #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error  < 0) mostrar_error_buscar_entrada(error);
             strcpy(UltimaEntradaLectura.camino, camino);
             UltimaEntradaLectura.p_inodo = p_inodo;
+            #if DEBUGN9
+                fprintf(
+                    stderr, 
+                    ORANGE 
+                    "[mi_read() → Actualizamos última lectura: %s]\n" 
+                    RESET,
+                    UltimaEntradaLectura.camino
+                );
+            #endif
         }
     #endif
     #if (USARCACHE==2 || USARCACHE==3)
@@ -580,18 +589,17 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
         {
             p_inodo = readCache.lastEntries[pos].p_inodo;
             #if DEBUGN9
-                fprintf(stderr,
-                        BLUE
-                        "\n[mi_read() -> Utilizamos la caché de lectura en vez de llamar a buscar_entrada()]\n"
-                        RESET
+                fprintf(
+                    stderr,
+                    BLUE
+                    "[mi_read() -> Utilizamos cache[%d]: %s]\n"
+                    RESET,
+                    pos, readCache.lastEntries[pos].camino
                 );
             #endif
         }
         else
         {
-            #if DEBUGN9
-                fprintf(stderr, ORANGE "[mi_read() → Actualizamos la caché de lectura]" RESET "\n");
-            #endif
             int error = buscar_entrada(camino, &p_inodo_dir, &p_inodo, &p_entrada, 0, 6);
             if (error < 0)
             {
@@ -600,7 +608,15 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                 return FALLO;
             }
 
-            updateCache(&readCache, camino, &p_inodo);
+            unsigned int posc = updateCache(&readCache, camino, &p_inodo);
+            #if DEBUGN9
+                fprintf(
+                    stderr,
+                    ORANGE "[mi_read() → Reemplazamos cache[%d]: %s]\n"
+                    RESET,
+                    posc, camino
+                );
+            #endif
         }
     #endif
 
@@ -655,6 +671,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             cache->lastEntries[cache->size].a = 1;
             pos = cache->size;
             cache->size++;
+            cache->last = cache->size % CACHE_SIZE;
         }
         else
         {
@@ -671,9 +688,10 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                 do
                 {
                     cache->lastEntries[cache->last % CACHE_SIZE].a = 0;
-                    pos = cache->last % CACHE_SIZE;
                     cache->last++;
                 } while(cache->lastEntries[cache->last % CACHE_SIZE].a == 1);
+                
+                pos = cache->last % CACHE_SIZE;
             }
         }
 
@@ -681,13 +699,16 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     }
 #endif
 #if USARCACHE==3
-    void updateCache(struct CacheLRU *cache, const char *camino, const unsigned int *p_inodo)
+    unsigned int updateCache(struct CacheLRU *cache, const char *camino, const unsigned int *p_inodo)
     {
+        unsigned int pos;
+
         if(cache->size < CACHE_SIZE)
         {
             strcpy(cache->lastEntries[cache->size].camino, camino);
             cache->lastEntries[cache->size].p_inodo = *p_inodo;
             gettimeofday(&cache->lastEntries[cache->size].ultima_consulta, NULL);
+            pos = cache->size;
             cache->size++;
         }
         else
@@ -703,7 +724,10 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             strcpy(cache->lastEntries[posMin].camino, camino);
             cache->lastEntries[posMin].p_inodo = *p_inodo;
             gettimeofday(&cache->lastEntries[posMin].ultima_consulta, NULL);
+            pos = posMin;
         }
+
+        return pos;
     }
 
     int compareTimevals(const struct timeval *t1, const struct timeval *t2)
@@ -743,10 +767,11 @@ int mi_link(const char *camino1, const char *camino2)
     }
     if((inode1.permisos & 4) != 4)
     {
-        fprintf(stderr,
-                RED
-                "ERROR: the entry to be linked doesn't have read permissions\n"
-                RESET
+        fprintf(
+            stderr,
+            RED
+            "ERROR: the entry to be linked doesn't have read permissions\n"
+            RESET
         );
         mi_signalSem();
         return FALLO;
@@ -830,7 +855,12 @@ int mi_unlink(const char *camino)
     }
     if (inode_entry.tipo == 'd' && inode_entry.tamEnBytesLog > 0)
     {
-        fprintf(stderr, RED "ERROR: can not delete not empty directory" RESET);
+        fprintf(
+            stderr, 
+            RED 
+            "ERROR: can not delete not empty directory" 
+            RESET
+        );
         mi_signalSem();
         return FALLO;
     }
@@ -910,7 +940,12 @@ int is_directory(const char *camino)
 
     if (inode.tipo != 'd')
     {
-        fprintf(stderr, RED "ERROR: the specified path doesn't refer to a directory\n" RESET);
+        fprintf(
+            stderr, 
+            RED 
+            "ERROR: the specified path doesn't refer to a directory\n" 
+            RESET
+        );
         return FALLO;
     }
 

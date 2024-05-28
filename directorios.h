@@ -20,7 +20,7 @@
 #define TAMBUFFER (TAMFILA * 1000)
 #define TAMNOMBRE 60 //tamaño del nombre de directorio o fichero, en Ext2 = 256
 #define PROFUNDIDAD 32 //profundidad máxima del árbol de directorios
-#define USARCACHE 2 // Nivel de cache -> 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
+#define USARCACHE 1 // Nivel de cache -> 0:sin caché, 1: última L/E, 2:tabla FIFO, 3:tabla LRU
 #if (USARCACHE==2 || USARCACHE==3)
     #define CACHE_SIZE 3
 #endif
@@ -146,7 +146,7 @@ int searchEntry(const char *camino, struct CacheLRU *cache);
 /// \param cache structure where the LRU Cache is stored
 /// \param camino path to the entry
 /// \param p_inodo inode number of the entry
-void updateCache(struct CacheLRU *cache, const char *camino, const unsigned int *p_inodo);
+unsigned int updateCache(struct CacheLRU *cache, const char *camino, const unsigned int *p_inodo);
 /// Compares two time stamps
 /// \param t1 time stamp 1
 /// \param t2 time stamp 2
