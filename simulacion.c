@@ -72,6 +72,8 @@ int main(int argc, char **args) {
         usleep(150000);
     }
 
+    while (acabados < NUMPROCESOS) pause();
+
     if (bumount() < 0) return FALLO;
     return EXITO;
 }
