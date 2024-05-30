@@ -564,9 +564,9 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             UltimaEntradaLectura.p_inodo = p_inodo;
             #if DEBUGN9
                 fprintf(
-                    stderr, 
-                    ORANGE 
-                    "[mi_read() → Actualizamos última lectura: %s]\n" 
+                    stderr,
+                    ORANGE
+                    "[mi_read() → Actualizamos última lectura: %s]\n"
                     RESET,
                     UltimaEntradaLectura.camino
                 );
