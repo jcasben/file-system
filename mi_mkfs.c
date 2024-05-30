@@ -16,7 +16,7 @@ int main(int argc, char **argv)
         return FALLO;
     }
 
-    #if DEBUGMMAP
+    #if MMAP
         unsigned int finDV = atoi(argv[2]) * BLOCKSIZE - 1;
         FILE *fp = fopen(argv[1], "w");
         fseek(fp, finDV, SEEK_SET);

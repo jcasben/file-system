@@ -32,6 +32,9 @@ int bmount(const char *camino)
     umask(000);
     if (fd > 0) close(fd);
     fd = open(camino, O_RDWR | O_CREAT, 0666);
+    #if MMAP
+        ptrSFM = do_mmap(fd);
+    #endif
     if (fd < 0)
     {
         perror(RED "ERROR" RESET);
@@ -43,6 +46,10 @@ int bmount(const char *camino)
 
 int bumount()
 {
+    #if MMAP
+        msync(ptrSFM, tamSFM, MS_SYNC);
+        munmap(ptrSFM, tamSFM);
+    #endif
     deleteSem();
     if ((fd = close(fd)) < 0)
     {
