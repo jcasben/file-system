@@ -55,10 +55,7 @@ int main(int argc, char **args) {
             for (int nscritura = 1; nscritura <= NUMESCRITURAS; nscritura++)
             {
                 struct REGISTRO registro;
-                registro.fecha = time(NULL);
-                fprintf(stdin, BLUE"%s"RESET, asctime((const struct tm *) registro.fecha));
-                //printf("%s\n", asctime((const struct tm *) registro.fecha));
-
+                gettimeofday(&registro.fecha, NULL);
                 registro.pid = getpid();
                 registro.nEscritura = nscritura;
                 registro.nRegistro = rand() % REGMAX;
