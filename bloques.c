@@ -8,10 +8,16 @@
 #include "bloques.h"
 #include "semaforo_mutex_posix.h"
 
+#include <sys/mman.h>
+
 // Global variable for the file descriptor of the virtual device.
 static int fd = 0;
 static unsigned int inside_sc = 0;
 static sem_t *mutex;
+#if MMAP
+    static int tamSFM = 0;
+    static void *ptrSFM;
+#endif
 
 int bmount(const char *camino)
 {
@@ -62,38 +68,59 @@ int bumount()
 
 int bwrite(unsigned int nbloque, const void *buf)
 {
-    // Set the pointer to the block we want to write
-    if (lseek(fd, (nbloque * BLOCKSIZE), SEEK_SET) < 0)
-    {
-        perror(RED "ERROR" RESET);
-        return FALLO;
-    }
-    // We write the block
-    if (write(fd, buf, BLOCKSIZE) != BLOCKSIZE)
-    {
-        perror(RED "ERROR" RESET);
-        return FALLO;
-    }
+    #if MMAP==0
+        // Set the pointer to the block we want to write
+        if (lseek(fd, (nbloque * BLOCKSIZE), SEEK_SET) < 0)
+        {
+            perror(RED "ERROR" RESET);
+            return FALLO;
+        }
+        // We write the block
+        if (write(fd, buf, BLOCKSIZE) != BLOCKSIZE)
+        {
+            perror(RED "ERROR" RESET);
+            return FALLO;
+        }
 
-    return BLOCKSIZE;
+        return BLOCKSIZE;
+    #endif
+    #if MMAP
+        int s;
+        if (nbloque * BLOCKSIZE + BLOCKSIZE <= tamSFM) s = BLOCKSIZE;
+        else s = tamSFM - nbloque * BLOCKSIZE;
+        if (s > 0) memcpy(ptrSFM + (nbloque*BLOCKSIZE), buf, s);
+
+        return s;
+    #endif
 }
 
 int bread(unsigned int nbloque, void *buf)
 {
     // Set the pointer to the block we want to read
-    if (lseek(fd, (nbloque * BLOCKSIZE), SEEK_SET) < 0)
-    {
-        perror(RED "ERROR" RESET);
-        return FALLO;
-    }
-    // We read the block
-    if (read(fd, buf, BLOCKSIZE) == FALLO)
-    {
-        perror(RED "ERROR" RESET);
-        return FALLO;
-    }
+    #if MMAP==0
+        if (lseek(fd, (nbloque * BLOCKSIZE), SEEK_SET) < 0)
+        {
+            perror(RED "ERROR" RESET);
+            return FALLO;
+        }
+        // We read the block
+        if (read(fd, buf, BLOCKSIZE) == FALLO)
+        {
+            perror(RED "ERROR" RESET);
+            return FALLO;
+        }
 
-    return BLOCKSIZE;
+        return BLOCKSIZE;
+    #endif
+    #if MMAP
+        int s;
+        if (nbloque * BLOCKSIZE + BLOCKSIZE <= tamSFM) s = BLOCKSIZE;
+        else s = tamSFM - nbloque * BLOCKSIZE;
+        if (s > 0) memcpy(buf, ptrSFM + (nbloque*BLOCKSIZE), s);
+
+        return s;
+    #endif
+
 }
 
 void mi_waitSem()
@@ -115,3 +142,15 @@ void mi_signalSem()
         signalSem(mutex);
     }
 }
+
+#if MMAP
+    void *do_mmap(int fd) {
+        struct stat st;
+        void *ptr;
+        fstat(fd, &st);
+        tamSFM = st.st_size; //static int tamSFM: tamaño memoria compartida
+        if ((ptr = mmap(NULL, PROT_WRITE, MAP_SHARED, tamSFM, fd, 0))== (void *)-1)
+            fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));
+        return ptr;
+    }
+#endif
