@@ -7,6 +7,9 @@
 
 #include "simulacion.h"
 
+#define LINESIZE 120
+#define BUFFERSIZE (6*LINESIZE)
+
 struct INFORMACION {
     int pid;
     unsigned int nEscrituras; //validadas
