@@ -289,7 +289,6 @@ int mi_dir(const char *camino, char *buffer, char tipo, char flag)
             printf("\nTYPE\tPERMISSIONS\tmTIME\t\t\tSIZE\tNAME\n"
                        "---------------------------------------------------------------------\n");
         }
-        int nbloc = 0;
         int entry_inode_number = 0;
 
         struct entrada buffer_lec[BLOCKSIZE/sizeof(struct entrada)];
@@ -485,7 +484,8 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
         {
             p_inodo = writeCache.lastEntries[pos].p_inodo;
             #if DEBUGN9
-                fprintf(stderr,
+                fprintf(
+                    stderr,
                     BLUE
                     "[mi_write() -> Utilizamos cache[%d]: %s]\n"
                     RESET,
@@ -502,15 +502,7 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
                 mi_signalSem();
                 return FALLO;
             }
-            unsigned int posc = updateCache(&writeCache, camino, &p_inodo);
-            #if DEBUGN9
-                fprintf(
-                    stderr,
-                    ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n"
-                    RESET,
-                    posc, camino
-                );
-            #endif
+            updateCache(&writeCache, camino, &p_inodo);
         }
     #endif
 
@@ -604,16 +596,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
                 mi_signalSem();
                 return FALLO;
             }
-
-            unsigned int posc = updateCache(&readCache, camino, &p_inodo);
-            #if DEBUGN9
-                fprintf(
-                    stderr,
-                    ORANGE "[mi_read() → Reemplazamos cache[%d]: %s]\n"
-                    RESET,
-                    posc, camino
-                );
-            #endif
+            updateCache(&readCache, camino, &p_inodo);
         }
     #endif
 
@@ -698,6 +681,15 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             }
         }
 
+            #if DEBUGN9
+                    fprintf(
+                        stderr,
+                        ORANGE "[mi_read() → Reemplazamos cache[%d]: %s]\n"
+                        RESET,
+                        posc, camino
+                    );
+            #endif
+
         return pos;
     }
 #endif
@@ -729,6 +721,15 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
             gettimeofday(&cache->lastEntries[posMin].ultima_consulta, NULL);
             pos = posMin;
         }
+
+        #if DEBUGN9
+            fprintf(
+                stderr,
+                ORANGE "[mi_write() → Reemplazamos cache[%d]: %s]\n"
+                RESET,
+                posc, camino
+            );
+        #endif
 
         return pos;
     }
