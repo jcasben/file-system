@@ -149,7 +149,7 @@ void mi_signalSem()
         void *ptr;
         fstat(fd, &st);
         tamSFM = st.st_size; //static int tamSFM: tamaño memoria compartida
-        if ((ptr = mmap(NULL, PROT_WRITE, MAP_SHARED, tamSFM, fd, 0))== (void *)-1)
+        if ((ptr = mmap(NULL, tamSFM, PROT_WRITE, MAP_SHARED, fd, 0))== (void *)-1)
             fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));
         return ptr;
     }
