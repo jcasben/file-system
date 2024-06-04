@@ -90,14 +90,7 @@ int main(int argc, char **args)
     leer_inodo(p_inodo_dir, &origin_dir);
 
     unsigned int cant_entries = origin_dir.tamEnBytesLog / sizeof(struct entrada);
-    if (p_entry == cant_entries - 1)
-    {
-        if (mi_truncar_f(p_inodo_dir, origin_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
-        {
-            return FALLO;
-        }
-    }
-    else
+    if (p_entry != cant_entries - 1)
     {
         struct entrada last_entry;
         if (mi_read_f(p_inodo_dir,&last_entry,(cant_entries - 1) * sizeof(struct entrada),sizeof(struct entrada)) == FALLO)
@@ -108,10 +101,11 @@ int main(int argc, char **args)
         {
             return FALLO;
         }
-        if (mi_truncar_f(p_inodo_dir,origin_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
-        {
-            return FALLO;
-        }
+    }
+
+    if (mi_truncar_f(p_inodo_dir, origin_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+    {
+        return FALLO;
     }
 
     if (bumount() < 0) return FALLO;
