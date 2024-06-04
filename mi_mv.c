@@ -55,7 +55,6 @@ int main(int argc, char **args)
     memset(dest_path, 0, sizeof(dest_path));
     sprintf(dest_path, "%s%s", args[3], file_name);
     if (is_directory) strcat(dest_path, "/");
-//    printf("%s\n", dest_path);
 
     unsigned p_inodo_dir2 = 0;
     unsigned int n_inode2 = 0;
@@ -70,20 +69,50 @@ int main(int argc, char **args)
     }
 
     struct entrada entrada;
+    memset(&entrada, 0, sizeof(entrada));
     if(mi_read_f(p_inodo_dir, &entrada, p_entry * sizeof(struct entrada),
                  sizeof(struct entrada)) == FALLO) return FALLO;
 
     struct entrada entrada2;
+    memset(&entrada2, 0, sizeof(entrada2));
     if(mi_read_f(p_inodo_dir2, &entrada2, p_entry2 * sizeof(struct entrada),
                  sizeof(struct entrada)) == FALLO) return FALLO;
 
-    liberar_inodo(entrada2.ninodo);
-    entrada2.ninodo = entrada.ninodo;
-
-    mi_unlink(args[2]);
+    unsigned int inode_to_delete = entrada2.ninodo;
+    entrada2.ninodo = n_inode;
 
     if(mi_write_f(p_inodo_dir2, &entrada2, p_entry2 * sizeof(struct entrada),
                   sizeof(struct entrada)) == FALLO) return FALLO;
+
+    liberar_inodo(inode_to_delete);
+
+    struct inodo origin_dir;
+    leer_inodo(p_inodo_dir, &origin_dir);
+
+    unsigned int cant_entries = origin_dir.tamEnBytesLog / sizeof(struct entrada);
+    if (p_entry == cant_entries - 1)
+    {
+        if (mi_truncar_f(p_inodo_dir, origin_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+    }
+    else
+    {
+        struct entrada last_entry;
+        if (mi_read_f(p_inodo_dir,&last_entry,(cant_entries - 1) * sizeof(struct entrada),sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+        if (mi_write_f(p_inodo_dir,&last_entry,p_entry * sizeof(struct entrada),sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+        if (mi_truncar_f(p_inodo_dir,origin_dir.tamEnBytesLog - sizeof(struct entrada)) == FALLO)
+        {
+            return FALLO;
+        }
+    }
 
     if (bumount() < 0) return FALLO;
 
