@@ -32,15 +32,15 @@ int main(int argc, char **args)
         return FALLO;
     }
 
-    char path[TAMNOMBRE * PROFUNDIDAD];
-    memset(path, 0, TAMNOMBRE * PROFUNDIDAD);
+    char path[strlen(args[3]) + 2];
+    memset(path, 0, strlen(args[3]) + 2);
     strcat(path, "/");
     strcat(path, args[3]);
     if (args[2][strlen(args[2])] == '/') strcat(path, "/");
 
     unsigned p_inodo_dir2 = p_inodo_dir;
-    unsigned int n_inode2 = n_inode;
-    unsigned int p_entry2 = p_entry;
+    unsigned int n_inode2 = 0;
+    unsigned int p_entry2 = 0;
 
     error = buscar_entrada(path, &p_inodo_dir2, &n_inode2, &p_entry2, 0, 6);
     if(error >= 0)
