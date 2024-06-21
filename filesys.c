@@ -57,6 +57,8 @@ int execute_line(char *line)
     else if (strcmp(args[0], "link") == 0) fs_link(args);
     else if (strcmp(args[0], "stat") == 0) fs_stat(args);
     else if (strcmp(args[0], "rn") == 0) fs_rn(args);
+    else if (strcmp(args[0], "mv") == 0) fs_mv(args);
+    else if (strcmp(args[0], "rm_r") == 0) fs_rm_r(args);
     else if (strcmp(args[0], "help") == 0) help();
 
     return 0;
@@ -90,10 +92,7 @@ void create_disk(char **args)
     strcpy(path, "/");
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_mkfs", args);
-    }
+    if (pid == 0) execvp("./mi_mkfs", args);
     else if (pid > 0) wait(&wstatus);
     printf(BOLD GREEN "\nSUCCESSFULLY CREATED DISK %s\n\n" RESET, disk_name);
 }
@@ -131,10 +130,8 @@ void fs_ls(char **args)
     }
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_ls", args);
-    } else if (pid > 0) wait(&wstatus);
+    if (pid == 0) execvp("./mi_ls", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_mkdir(char **args)
@@ -155,10 +152,8 @@ void fs_mkdir(char **args)
     args[4] = NULL;
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_mkdir", args);
-    } else if (pid > 0) wait(&wstatus);
+    if (pid == 0) execvp("./mi_mkdir", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_touch(char **args)
@@ -179,10 +174,8 @@ void fs_touch(char **args)
     args[4] = NULL;
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_touch", args);
-    } else if (pid > 0) wait(&wstatus);
+    if (pid == 0) execvp("./mi_touch", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_chmod(char **args)
@@ -204,10 +197,8 @@ void fs_chmod(char **args)
     args[4] = NULL;
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_chmod", args);
-    } else if (pid > 0) wait(&wstatus);
+    if (pid == 0) execvp("./mi_chmod", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_cd(char **args)
@@ -238,6 +229,8 @@ void fs_cd(char **args)
 
         return;
     }
+
+    if (args[1])
     bmount(disk_name);
     char new_path[PATHSIZE];
     strcpy(new_path, path);
@@ -267,10 +260,28 @@ void fs_rm(char **args)
     args[3] = NULL;
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
+    if (pid == 0) execvp("./mi_rm", args);
+    else if (pid > 0) wait(&wstatus);
+}
+
+void fs_rm_r(char **args)
+{
+    if (disk_selected == 0)
     {
-        execvp("./mi_rm", args);
-    } else if (pid > 0) wait(&wstatus);
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+
+    char file_path[PATHSIZE];
+    strcpy(file_path, path);
+    strcat(file_path, args[1]);
+    args[1] = disk_name;
+    args[2] = file_path;
+    args[3] = NULL;
+    int wstatus;
+    pid_t pid = fork();
+    if (pid == 0) execvp("./mi_rm_r", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_rmdir(char **args)
@@ -289,10 +300,8 @@ void fs_rmdir(char **args)
     args[3] = NULL;
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_rmdir", args);
-    } else if (pid > 0) wait(&wstatus);
+    if (pid == 0) execvp("./mi_rmdir", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_rn(char **args)
@@ -314,10 +323,8 @@ void fs_rn(char **args)
     args[4] = NULL;
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_rn", args);
-    } else if (pid > 0) wait(&wstatus);
+    if (pid == 0) execvp("./mi_rn", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_cat(char **args)
@@ -336,10 +343,8 @@ void fs_cat(char **args)
     args[3] = NULL;
     int wstatus;
     pid_t pid = fork();
-    if (pid == 0)
-    {
-        execvp("./mi_cat", args);
-    } else if (pid > 0) wait(&wstatus);
+    if (pid == 0) execvp("./mi_cat", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_write(char **args)
@@ -358,9 +363,43 @@ void fs_link(char **args)
         fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
         return;
     }
+
+    char file_path[PATHSIZE];
+    strcpy(file_path, path);
+    strcat(file_path, args[1]);
+    char new_path[PATHSIZE];
+    strcpy(new_path, args[2]);
+    args[1] = disk_name;
+    args[2] = file_path;
+    args[3] = new_path;
+    args[4] = NULL;
+    int wstatus;
+    pid_t pid = fork();
+    if (pid == 0) execvp("./mi_link", args);
+    else if (pid > 0) wait(&wstatus);
 }
 
 void fs_stat(char **args)
+{
+    if (disk_selected == 0)
+    {
+        fprintf(stderr, RED "ERROR: select or create a disk to execute this command\n" RESET);
+        return;
+    }
+
+    char file_path[PATHSIZE];
+    strcpy(file_path, path);
+    strcat(file_path, args[1]);
+    args[1] = disk_name;
+    args[2] = file_path;
+    args[3] = NULL;
+    int wstatus;
+    pid_t pid = fork();
+    if (pid == 0) execvp("./mi_stat", args);
+    else if (pid > 0) wait(&wstatus);
+}
+
+void fs_mv(char **args)
 {
     if (disk_selected == 0)
     {
