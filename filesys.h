@@ -47,5 +47,7 @@ void fs_write(char **args);
 void fs_link(char **args);
 void fs_stat(char **args);
 void fs_rn(char **args);
+void fs_mv(char **args);
+void fs_rm_r(char **args);
 void help();
 int file_exists(const char *path_to_file);
