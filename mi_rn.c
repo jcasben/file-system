@@ -14,7 +14,7 @@ int main(int argc, char **args)
         fprintf(
                 stderr,
                 RED
-                "ERROR: invalid syntax. Usage: ./mi_rn <disco> </ruta_antigua> <ruta_nueva>\n"
+                "ERROR: invalid syntax. Usage: ./mi_rn <disco> </ruta_antigua> <nuevo_nombre>\n"
                 RESET
         );
         return FALLO;

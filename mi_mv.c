@@ -14,7 +14,7 @@ int main(int argc, char **args)
         fprintf(
             stderr,
             RED
-            "ERROR: invalid syntax. Usage: ./mi_rn <disco> </origen/nombre> </destino/>\n"
+            "ERROR: invalid syntax. Usage: ./mi_mv <disco> </origen/nombre> </destino/>\n"
             RESET
         );
         exit(FALLO);
