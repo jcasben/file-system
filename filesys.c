@@ -613,7 +613,7 @@ void fs_cp(char **args, int argc)
 void help()
 {
     printf(BOLD "\n**In all functions where a path can be entered as a parameter, the path used will be the path you are currently working on, followed by the path you passed as an argument to the function. In addition, the functions will be executed on the device that has been selected.**\n\n" RESET
-            "------------------------------------------------------------------------------------\n"
+            "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n"
             BLUE "create:" RESET " Creates the virtual device with the specified name and the specified blocks.\n"
             "\tSyntax: create <device name> <nblocks>\n\n"
             BLUE "select:" RESET " Changes to the working device that you enter by parameter. The disk that you enter by parameter must have been created previously.\n"
@@ -650,7 +650,7 @@ void help()
             "\tSyntax: mv <src> <dest>\n\n"
             BLUE "cp:" RESET " Copy a file or directory to the destination path that you enter as a parameter. The destination must be a directory.\n"
             "\tSyntax: cp <src> <dest>\n\n"
-            "------------------------------------------------------------------------------------\n"
+           "-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n"
     );
 
 }
